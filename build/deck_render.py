@@ -114,12 +114,45 @@ def _text(slide, x, y, w, h, paras, anchor=MSO_ANCHOR.TOP):
 SERIF_N = "Palatino Linotype"
 SANS_N = "Segoe UI"
 M = 74  # logical margin (~0.058*1280)
+LW, LH = 1280, 720
+
+
+def _faint_logo(dark, tmpdir):
+    """A reduced-opacity copy of the logo for use as a watermark picture."""
+    from PIL import Image as PImage
+    p = os.path.join(tmpdir, "wm_" + ("d" if dark else "l") + ".png")
+    if not os.path.exists(p):
+        im = PImage.open(L.LOGO_DARK if dark else L.LOGO_LIGHT).convert("RGBA")
+        im.putalpha(im.split()[3].point(lambda v: int(v * 0.5)))
+        im.save(p)
+    return p
+
+
+def _native_branding(slide, dark, tmpdir):
+    """Footer (company name) + watermark logo on a native editable slide."""
+    tb = slide.shapes.add_textbox(IX(0), IY(652), IX(LW), IY(36))
+    tf = tb.text_frame; tf.word_wrap = False
+    para = tf.paragraphs[0]; para.alignment = PP_ALIGN.CENTER
+    run = para.add_run(); run.text = L.FOOTER_TEXT
+    run.font.name = SANS_N; run.font.size = Pt(7); run.font.bold = True
+    run.font.color.rgb = C("FFFFFF") if dark else C(theme.INK_FAINT)
+    from PIL import Image as PImage
+    lp = _faint_logo(dark, tmpdir)
+    im = PImage.open(lp); lh = 0.32; lw = im.width * lh / im.height
+    slide.shapes.add_picture(lp, Inches(SLIDE_IN_W - 0.62 - lw), Inches(SLIDE_IN_H - 0.58), Inches(lw), Inches(lh))
 
 
 def _slide_native(prs, rec, tmpdir, idx):
     blank = prs.slide_layouts[6]
     s = prs.slides.add_slide(blank)
     lay = rec["layout"]
+
+    # dashboard: reuse the pixel-perfect Pillow render (branding already baked in)
+    if lay == "dashboard":
+        png = os.path.join(tmpdir, "dash_%d.jpg" % idx)
+        L.render_slide(rec).save(png, format="JPEG", quality=88, optimize=True, progressive=True)
+        s.shapes.add_picture(png, 0, 0, width=prs.slide_width, height=prs.slide_height)
+        return s
 
     if lay == "cover":
         s.shapes.add_picture(_cropped(rec.get("image"), LW, LH, tmpdir, f"cov{idx}"), 0, 0,
@@ -191,6 +224,8 @@ def _slide_native(prs, rec, tmpdir, idx):
             (rec["title"], SERIF_N, 48, theme.INK, False, 8),
             (rec.get("caption", ""), SANS_N, 15.5, theme.INK_SOFT, False, 0),
         ])
+
+    _native_branding(s, lay in ("cover", "feature-panel"), tmpdir)
     return s
 
 

@@ -12,6 +12,10 @@ S = theme.RENDER_SCALE
 W, H = theme.PX_W, theme.PX_H
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGO_LIGHT = os.path.join(ROOT, "build", "assets", "logo_light.png")
+LOGO_DARK = os.path.join(ROOT, "build", "assets", "logo_dark.png")
+
+COMPANY = "Exploreain"
+FOOTER_TEXT = "EXPLOREAIN  ·  PRIVATE SOUTH INDIA JOURNEYS"
 
 MARGIN = int(0.058 * W)
 
@@ -97,6 +101,19 @@ def draw_tracked(draw, text, fnt, x, y, fill, tracking):
     for ch in text:
         draw.text((x, y), ch, font=fnt, fill=fill)
         x += _measure(draw, ch, fnt)[0] + tracking
+
+
+def _tracked_width(draw, text, fnt, tracking):
+    if not text:
+        return 0
+    w = -tracking
+    for ch in text:
+        w += _measure(draw, ch, fnt)[0] + tracking
+    return w
+
+
+def draw_tracked_centered(draw, text, fnt, cx, y, fill, tracking):
+    draw_tracked(draw, text, fnt, cx - _tracked_width(draw, text, fnt, tracking) // 2, y, fill, tracking)
 
 
 def _rule(draw, x, y, w, color, thick=None):
@@ -312,8 +329,94 @@ def layout_closing(rec):
     return img
 
 
+def layout_dashboard(rec):
+    """Opening 'by the numbers' slide — a row/grid of real-figure stat tiles."""
+    img = Image.new("RGB", (W, H), theme.rgb(theme.PAPER))
+    d = ImageDraw.Draw(img)
+    x = MARGIN
+    y = int(0.11 * H)
+    ef = font(theme.SANS_SEMIBOLD, 12)
+    draw_tracked(d, rec.get("eyebrow", "").upper(), ef, x, y, theme.rgb(theme.GOLD), int(3 * S))
+    y += _measure(d, "AG", ef)[1] + int(20 * S)
+    _rule(d, x, y, int(0.045 * W), theme.rgb(theme.GOLD))
+    y += int(28 * S)
+    hl, hf, hlh = fit(d, rec["title"], theme.SERIF, 44, 26, int(W * 0.84), int(H * 0.22))
+    y = draw_lines(d, hl, hf, x, y, theme.rgb(theme.INK), hlh)
+
+    tiles = rec.get("tiles", [])
+    n = len(tiles) or 1
+    cols = n if n <= 4 else 3
+    rows = (n + cols - 1) // cols
+    gap = int(0.022 * W)
+    top = y + int(0.06 * H)
+    bottom = H - int(0.155 * H)  # leave room for footer + watermark
+    tw = (W - 2 * MARGIN - gap * (cols - 1)) // cols
+    th = (bottom - top - gap * (rows - 1)) // max(1, rows)
+    num_pt = 68 if rows == 1 else 56
+
+    for i, (val, label) in enumerate(tiles):
+        r, c = divmod(i, cols)
+        tx = MARGIN + c * (tw + gap)
+        ty = top + r * (th + gap)
+        d.rounded_rectangle([tx, ty, tx + tw, ty + th], radius=int(14 * S),
+                            fill=theme.rgb(theme.PAPER_2), outline=theme.rgb(theme.LINE), width=max(1, int(1 * S)))
+        _rule(d, tx + int(26 * S), ty + int(26 * S), int(30 * S), theme.rgb(theme.GOLD))
+        nf = font(theme.SERIF, num_pt)
+        nh = _measure(d, val, nf)[1]
+        lf = font(theme.SANS_SEMIBOLD, 12.5)
+        lh = _measure(d, "AG", lf)[1]
+        block = nh + int(16 * S) + lh
+        by = ty + (th - block) // 2 + int(12 * S)
+        d.text((tx + tw // 2, by), val, font=nf, fill=theme.rgb(theme.BRAND), anchor="ma")
+        draw_tracked_centered(d, label.upper(), lf, tx + tw // 2, by + nh + int(16 * S),
+                              theme.rgb(theme.INK_FAINT), int(2.4 * S))
+    return img
+
+
+# ---------- watermark + footer (applied to every slide) ----------
+_DARK_BOTTOM = {"cover", "feature-panel"}  # bottom sits over a dark/photo area
+_logo_cache = {}
+
+
+def _load_logo(dark):
+    path = LOGO_DARK if dark else LOGO_LIGHT
+    if path not in _logo_cache:
+        _logo_cache[path] = Image.open(path).convert("RGBA")
+    return _logo_cache[path]
+
+
+def add_branding(img, layout):
+    d = ImageDraw.Draw(img)
+    # footer: company name, bottom-centre, colour adapted to the slide
+    ff = font(theme.SANS_SEMIBOLD, 9.5)
+    track = int(2.2 * S)
+    fy = H - int(0.05 * H)
+    sx = W // 2 - _tracked_width(d, FOOTER_TEXT, ff, track) // 2
+    if layout in _DARK_BOTTOM:
+        fill, stroke = (255, 255, 255), 0
+    elif layout in ("feature-split", "feature-framed"):
+        fill, stroke = (255, 255, 255), max(1, int(2 * S))
+    else:
+        fill, stroke = theme.rgb(theme.INK_FAINT), 0
+    for ch in FOOTER_TEXT:
+        if stroke:
+            d.text((sx, fy), ch, font=ff, fill=fill, stroke_width=stroke, stroke_fill=(8, 18, 26), anchor="lm")
+        else:
+            d.text((sx, fy), ch, font=ff, fill=fill, anchor="lm")
+        sx += _measure(d, ch, ff)[0] + track
+    # watermark: faint logo wordmark, bottom-right corner
+    logo = _load_logo(layout in _DARK_BOTTOM).copy()
+    lh = int(0.040 * H)
+    lw = round(logo.width * lh / logo.height)
+    logo = logo.resize((lw, lh), Image.LANCZOS)
+    logo.putalpha(logo.split()[3].point(lambda v: int(v * 0.5)))
+    img.paste(logo, (W - MARGIN - lw, H - int(0.052 * H) - lh // 2), logo)
+    return img
+
+
 LAYOUTS = {
     "cover": layout_cover,
+    "dashboard": layout_dashboard,
     "overview": layout_overview,
     "feature-panel": layout_feature_panel,
     "feature-split": layout_feature_split,
@@ -323,4 +426,4 @@ LAYOUTS = {
 
 
 def render_slide(rec):
-    return LAYOUTS[rec["layout"]](rec)
+    return add_branding(LAYOUTS[rec["layout"]](rec), rec["layout"])

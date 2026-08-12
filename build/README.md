@@ -59,11 +59,19 @@ Outputs to `dist/<slug>/`:
 ## Itinerary format (`itineraries/*.json`)
 
 ```json
-{ "title": "...", "client": "...", "dates": "...", "prepared_by": "Exploreain",
-  "cover_key": "kochi", "destinations": ["KOCHI", "MUNNAR", ...] }
+{ "title": "...", "client": "...", "dates": "...", "nights": 14,
+  "prepared_by": "Exploreain", "cover_key": "kochi",
+  "destinations": ["KOCHI", "MUNNAR", ...] }
 ```
 `destinations` is an ordered list of UPPERCASE catalogue names; validated against
-`catalogue.json` (run `parse.py` first if it's missing).
+`catalogue.json` (run `parse.py` first if it's missing). `nights` (optional) adds
+a tile to the dashboard slide.
+
+Every deck opens with a **cover** then a **"by the numbers" dashboard** — real,
+itinerary-specific figures (destinations, curated experiences, districts,
+attractions, nights) as stat tiles (`compute_stats` in `slideplan.py`; district
+map there too). Every slide carries a company **footer** and a faint logo
+**watermark** (`add_branding` in `deck_layouts.py`).
 
 ## Modules
 

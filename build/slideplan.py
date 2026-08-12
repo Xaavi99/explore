@@ -9,6 +9,46 @@ import imagemap
 # feature layouts cycled across the per-destination slides for visual rhythm
 FEATURE_CYCLE = ["feature-panel", "feature-split", "feature-framed"]
 
+# destination -> district(s) it sits in, for the "by the numbers" dashboard
+DISTRICTS = {
+    "KOCHI": ["Ernakulam"], "MUNNAR": ["Idukki"], "THEKKADY": ["Idukki"],
+    "ALLEPPEY": ["Alappuzha"], "KUMARAKOM": ["Kottayam"],
+    "VARKALA": ["Thiruvananthapuram"], "KOVALAM": ["Thiruvananthapuram"],
+    "ATHIRAPPILLY": ["Thrissur"], "WAYANAD": ["Wayanad"],
+    "KANNUR & BEKAL": ["Kannur", "Kasaragod"],
+    "NORTH GOA": ["North Goa"], "SOUTH GOA & OLD GOA": ["South Goa"],
+    "HAMPI": ["Vijayanagara"], "MYSORE": ["Mysuru"], "COORG": ["Kodagu"],
+    "GOKARNA": ["Uttara Kannada"],
+    "MADURAI": ["Madurai"], "THANJAVUR": ["Thanjavur"],
+    "MAHABALIPURAM": ["Chengalpattu"], "PONDICHERRY": ["Puducherry"],
+    "OOTY": ["Nilgiris"],
+    "LAKSHADWEEP": ["Lakshadweep"], "ANDAMAN ISLANDS": ["Andaman"],
+    "SRI LANKA": ["Sri Lanka"],
+}
+
+
+def compute_stats(itinerary, stops):
+    """Real, itinerary-specific figures for the dashboard slide: (value, label)."""
+    dests = len(stops)
+    experiences = sum(len(s["dest"].get("details", [])) for s in stops)
+    attractions = sum(len(s["dest"].get("attractions_list", [])) for s in stops)
+    districts = set()
+    for s in stops:
+        for dist in DISTRICTS.get(s["name"], []):
+            districts.add(dist)
+    regions = len({s["region"] for s in stops})
+
+    tiles = [(str(dests), "Destinations"), (str(experiences), "Curated experiences")]
+    if districts:
+        tiles.append((str(len(districts)), "Districts"))
+    if attractions:
+        tiles.append((str(attractions), "Attractions to choose from"))
+    if itinerary.get("nights"):
+        tiles.append((str(itinerary["nights"]), "Nights"))
+    if regions > 1:
+        tiles.append((str(regions), "Regions"))
+    return tiles
+
 
 def build_slide_plan(itinerary, stops, copy):
     """itinerary dict + resolved stops + copy_bundle -> [slide record]."""
@@ -28,7 +68,15 @@ def build_slide_plan(itinerary, stops, copy):
         "image": cover_path,
     })
 
-    # 2) overview grid (up to 4 thumbnails)
+    # 2) dashboard — the journey in real numbers
+    slides.append({
+        "layout": "dashboard",
+        "eyebrow": (itinerary.get("prepared_by") or "Exploreain") + " · at a glance",
+        "title": itinerary.get("title", "South India Tour") + ", by the numbers",
+        "tiles": compute_stats(itinerary, stops),
+    })
+
+    # 3) overview grid (up to 4 thumbnails)
     thumbs = [s["slide_path"] for s in stops if s["slide_path"]][:4]
     slides.append({
         "layout": "overview",
