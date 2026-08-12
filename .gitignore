@@ -1,0 +1,12 @@
+# Generated build intermediates — regenerate with: python build/build_all.py
+build/catalogue.json
+build/images.json
+build/logo.json
+
+# Unused source videos (kept on disk, not tracked — build uses only .jpg)
+*.mp4
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*.tmp
