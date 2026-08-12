@@ -807,8 +807,23 @@
   /* ---- client-side PPTX builder ---- */
   var SLIDE_W = 13.333, SLIDE_H = 7.5, MIN = 0.85; // inches
   var C = { brand: "0e73c4", brand2: "0a5896", gold: "b58a2e", paper: "eef1f4",
-            ink: "16202b", inkSoft: "47535f", white: "FFFFFF", dark: "0a1520" };
+            paper2: "f8f9fb", line: "d3dae1", ink: "16202b", inkSoft: "47535f",
+            inkFaint: "6f7c88", white: "FFFFFF", dark: "0a1520" };
   var SERIF = "Palatino Linotype", SANS = "Segoe UI";
+  var FOOTER = "EXPLOREAIN  ·  PRIVATE SOUTH INDIA JOURNEYS";
+  var DISTRICTS = {
+    "KOCHI": ["Ernakulam"], "MUNNAR": ["Idukki"], "THEKKADY": ["Idukki"],
+    "ALLEPPEY": ["Alappuzha"], "KUMARAKOM": ["Kottayam"],
+    "VARKALA": ["Thiruvananthapuram"], "KOVALAM": ["Thiruvananthapuram"],
+    "ATHIRAPPILLY": ["Thrissur"], "WAYANAD": ["Wayanad"],
+    "KANNUR & BEKAL": ["Kannur", "Kasaragod"], "NORTH GOA": ["North Goa"],
+    "SOUTH GOA & OLD GOA": ["South Goa"], "HAMPI": ["Vijayanagara"],
+    "MYSORE": ["Mysuru"], "COORG": ["Kodagu"], "GOKARNA": ["Uttara Kannada"],
+    "MADURAI": ["Madurai"], "THANJAVUR": ["Thanjavur"],
+    "MAHABALIPURAM": ["Chengalpattu"], "PONDICHERRY": ["Puducherry"],
+    "OOTY": ["Nilgiris"], "LAKSHADWEEP": ["Lakshadweep"],
+    "ANDAMAN ISLANDS": ["Andaman"], "SRI LANKA": ["Sri Lanka"]
+  };
 
   function copyFor(d) {
     var c = COPY[d.name];
@@ -817,6 +832,40 @@
              caption: (d.highlights && d.highlights[0]) ? d.highlights[0] : "" };
   }
   function destPhoto(d) { var k = DEST_IMG[d.name]; return k && IMAGES[k] ? IMAGES[k] : null; }
+
+  function computeStats(stops) {
+    var exp = 0, attr = 0, districts = {};
+    stops.forEach(function (s) {
+      var d = s.d;
+      exp += (d.details ? d.details.length : 0);
+      attr += (d.attractions_list ? d.attractions_list.length : 0);
+      (DISTRICTS[d.name] || []).forEach(function (x) { districts[x] = 1; });
+    });
+    var tiles = [[String(stops.length), "Destinations"], [String(exp), "Curated experiences"]];
+    var nd = Object.keys(districts).length;
+    if (nd) tiles.push([String(nd), "Districts"]);
+    if (attr) tiles.push([String(attr), "Attractions"]);
+    return tiles;
+  }
+
+  // faint, transparent PNG of the logo (WebP -> canvas -> PNG keeps alpha)
+  function makeWatermark(dataUri) {
+    return new Promise(function (resolve) {
+      if (!dataUri) { resolve(null); return; }
+      var im = new Image();
+      im.onload = function () {
+        try {
+          var cv = document.createElement("canvas");
+          cv.width = im.width; cv.height = im.height;
+          var ctx = cv.getContext("2d");
+          ctx.globalAlpha = 0.5; ctx.drawImage(im, 0, 0);
+          resolve({ uri: cv.toDataURL("image/png"), aspect: im.width / im.height });
+        } catch (e) { resolve(null); }
+      };
+      im.onerror = function () { resolve(null); };
+      im.src = dataUri;
+    });
+  }
 
   // load a data-URI image, cover-crop to (tw x th) px, return a JPEG data URI
   // (canvas re-encode also converts WebP -> JPEG so PowerPoint always renders it)
@@ -849,6 +898,8 @@
     stops.forEach(function (s, i) {
       jobs.push(cropJpeg(destPhoto(s.d), 1500, 1500).then(function (u) { return ["feat" + i, u]; }));
     });
+    jobs.push(makeWatermark(LOGO.logo_light).then(function (o) { return ["wmLight", o]; }));
+    jobs.push(makeWatermark(LOGO.logo_dark).then(function (o) { return ["wmDark", o]; }));
 
     return Promise.all(jobs).then(function (pairs) {
       var img = {}; pairs.forEach(function (p) { img[p[0]] = p[1]; });
@@ -857,6 +908,13 @@
       pptx.layout = "EA16x9";
       var ph = function (sl) { sl.background = { color: C.brand2 }; };
 
+      // footer (company name) + faint logo watermark on every slide
+      var chrome = function (sl, dark) {
+        sl.addText(FOOTER, { x: 0, y: SLIDE_H - 0.5, w: SLIDE_W, h: 0.3, align: "center", valign: "middle", fontFace: SANS, fontSize: 7, bold: true, color: dark ? C.white : C.inkFaint, charSpacing: 1.5 });
+        var wm = dark ? img.wmDark : img.wmLight;
+        if (wm && wm.uri) { var wh = 0.32, ww = wm.aspect * wh; sl.addImage({ data: wm.uri, x: SLIDE_W - 0.62 - ww, y: SLIDE_H - 0.55, w: ww, h: wh }); }
+      };
+
       // 1) cover
       var s = pptx.addSlide();
       if (img.cover) s.addImage({ data: img.cover, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H }); else ph(s);
@@ -864,8 +922,28 @@
       s.addText("EXPLOREAIN · SOUTH INDIA", { x: MIN, y: 5.0, w: 9, h: 0.35, fontFace: SANS, fontSize: 12, bold: true, color: "E9C983", charSpacing: 2 });
       s.addText(title, { x: MIN, y: 5.35, w: 10.6, h: 1.3, fontFace: SERIF, fontSize: 42, color: C.white });
       s.addText(stops.length + " destinations · Exploreain", { x: MIN, y: 6.7, w: 10, h: 0.4, fontFace: SANS, fontSize: 15, color: "EEF2F6" });
+      chrome(s, true);
 
-      // 2) overview
+      // 2) dashboard — the journey in real numbers
+      var ds = pptx.addSlide(); ds.background = { color: C.paper };
+      ds.addText("EXPLOREAIN · AT A GLANCE", { x: MIN, y: 0.85, w: 9, h: 0.35, fontFace: SANS, fontSize: 12, bold: true, color: C.gold, charSpacing: 2 });
+      ds.addShape(pptx.ShapeType.rect, { x: MIN, y: 1.28, w: 0.6, h: 0.045, fill: { color: C.gold } });
+      ds.addText(title + ", by the numbers", { x: MIN, y: 1.45, w: 11, h: 1.0, fontFace: SERIF, fontSize: 34, color: C.ink });
+      var tiles = computeStats(stops);
+      var tn = tiles.length, tcols = tn <= 4 ? tn : 3, trows = Math.ceil(tn / tcols);
+      var tgap = 0.3, gtop = 3.25, gbot = SLIDE_H - 1.15;
+      var tW = (SLIDE_W - 2 * MIN - tgap * (tcols - 1)) / tcols, tH = (gbot - gtop - tgap * (trows - 1)) / trows;
+      tiles.forEach(function (t, i) {
+        var r = Math.floor(i / tcols), c = i % tcols;
+        var tx = MIN + c * (tW + tgap), ty = gtop + r * (tH + tgap);
+        ds.addShape(pptx.ShapeType.roundRect, { x: tx, y: ty, w: tW, h: tH, rectRadius: 0.1, fill: { color: C.paper2 }, line: { color: C.line, width: 1 } });
+        ds.addShape(pptx.ShapeType.rect, { x: tx + 0.28, y: ty + 0.28, w: 0.34, h: 0.045, fill: { color: C.gold } });
+        ds.addText(t[0], { x: tx, y: ty + tH * 0.26, w: tW, h: 1.0, align: "center", fontFace: SERIF, fontSize: 46, color: C.brand });
+        ds.addText(t[1].toUpperCase(), { x: tx, y: ty + tH * 0.64, w: tW, h: 0.4, align: "center", fontFace: SANS, fontSize: 11, bold: true, color: C.inkFaint, charSpacing: 1.5 });
+      });
+      chrome(ds, false);
+
+      // 3) overview
       s = pptx.addSlide(); s.background = { color: C.paper };
       var regions = []; stops.forEach(function (st) { if (regions.indexOf(st.r.name) === -1) regions.push(st.r.name); });
       s.addText(stops.length + " destinations. One journey.", { x: MIN, y: 0.9, w: 7.5, h: 1.2, fontFace: SERIF, fontSize: 34, color: C.ink });
@@ -877,8 +955,9 @@
         if (u) s.addImage({ data: u, x: tx, y: ty, w: tw, h: th });
         else s.addShape(pptx.ShapeType.rect, { x: tx, y: ty, w: tw, h: th, fill: { color: C.brand2 } });
       });
+      chrome(s, false);
 
-      // 3) per-destination features, cycling three layouts
+      // 4) per-destination features, cycling three layouts
       var layouts = ["panel", "split", "framed"];
       stops.forEach(function (st, i) {
         var d = st.d, cp = copyFor(d), eyebrow = titleCase(st.r.name).toUpperCase();
@@ -907,14 +986,16 @@
           sl.addText(cp.headline, { x: MIN, y: 3.35, w: SLIDE_W * 0.42, h: 1.7, fontFace: SERIF, fontSize: 32, color: C.ink });
           if (cp.caption) sl.addText(cp.caption, { x: MIN, y: 5.1, w: SLIDE_W * 0.42, h: 1.0, fontFace: SANS, fontSize: 14, color: C.inkSoft });
         }
+        chrome(sl, lay === "panel");
       });
 
-      // 4) closing
+      // 5) closing
       s = pptx.addSlide(); s.background = { color: C.paper };
       s.addText("Explore" + "ain", { x: MIN, y: 2.2, w: 8, h: 0.6, fontFace: SERIF, fontSize: 24, color: C.brand });
       s.addShape(pptx.ShapeType.rect, { x: MIN, y: 2.95, w: 0.6, h: 0.045, fill: { color: C.gold } });
       s.addText("Let's plan your journey.", { x: MIN, y: 3.15, w: 9, h: 1.0, fontFace: SERIF, fontSize: 40, color: C.ink });
       s.addText("Private, tailored South India journeys — own fleet, own drivers, licensed local guides.", { x: MIN, y: 4.25, w: 8.5, h: 0.8, fontFace: SANS, fontSize: 15, color: C.inkSoft });
+      chrome(s, false);
 
       var fn = (title || "south-india").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "south-india";
       return pptx.writeFile({ fileName: fn + ".pptx" });
