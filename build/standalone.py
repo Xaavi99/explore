@@ -1,17 +1,19 @@
 """Wrap the artifact-format catalogue into a standalone page for static hosting
-(e.g. GitHub Pages), written to docs/index.html.
+(e.g. GitHub Pages), written to index.html at the repo root.
 
     python build/standalone.py
 
 The catalogue at repo root is authored in claude.ai "artifact" format (no
 <html>/<head>/<body> — claude.ai supplies those). GitHub Pages needs a full
-document named index.html; this adds the wrapper. Run it after build_all.py.
+document named index.html; this adds the wrapper. index.html at the repo root
+takes priority over README.md as the Pages homepage when serving from `/ (root)`.
+Run it after build_all.py.
 """
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "exploreain-catalogue.html")
-OUTDIR = os.path.join(ROOT, "docs")
+OUTDIR = ROOT
 OUT = os.path.join(OUTDIR, "index.html")
 
 HEAD = (
