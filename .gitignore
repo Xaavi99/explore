@@ -3,8 +3,18 @@ build/catalogue.json
 build/images.json
 build/logo.json
 
+# Generated presentation decks — regenerate with: python build/deck.py <itinerary>
+dist/
+
+# NOTE: build/copy_cache.json is intentionally NOT ignored — it's the committed
+# AI-copy cache that keeps deck rebuilds free and deterministic.
+
 # Unused source videos (kept on disk, not tracked — build uses only .jpg)
 *.mp4
+
+# Python caches
+__pycache__/
+*.pyc
 
 # OS / editor cruft
 Thumbs.db
