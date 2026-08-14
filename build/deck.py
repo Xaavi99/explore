@@ -28,6 +28,7 @@ def main(argv):
     catalogue = load_catalogue()
     itinerary = load_itinerary(it_path)
     stops, warnings = resolve(itinerary, catalogue)
+    stops = slideplan.fit_stops(itinerary, stops)  # duration caps the stop count
     if warnings:
         print("WARN: no photo for", ", ".join(warnings), "(region placeholder used)")
 

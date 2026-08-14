@@ -373,8 +373,49 @@ def layout_dashboard(rec):
     return img
 
 
+def layout_data_card(rec):
+    """Per-location DATA card: hero photo with the location's figures over a scrim."""
+    img = _photo_or_placeholder(rec, W, H)
+    img = _over(img, vgrad_scrim((W, H), theme.rgb("#08161f"), 165, 0, start=0.0))
+    img = _over(img, vgrad_scrim((W, H), theme.rgb("#08161f"), 0, 232, start=0.40))
+    d = ImageDraw.Draw(img)
+    x = MARGIN
+    ef = font(theme.SANS_SEMIBOLD, 12)
+    y = int(0.12 * H)
+    draw_tracked(d, rec.get("eyebrow", "").upper(), ef, x, y, theme.rgb("#e9c983"), int(3 * S))
+    y += _measure(d, "AG", ef)[1] + int(16 * S)
+    nl, nf, nlh = fit(d, rec["name"].title(), theme.SERIF, 60, 34, int(W * 0.72), int(H * 0.3))
+    draw_lines(d, nl, nf, x, y, (255, 255, 255), nlh)
+
+    cells = [
+        (str(rec.get("experiences", 0)), "Experiences", True),
+        (str(rec.get("attractions", 0)), "Attractions", True),
+        (rec.get("district", "—"), "District", False),
+    ]
+    cw = (W - 2 * MARGIN) // 3
+    ry = int(0.65 * H)
+    for i, (val, label, isnum) in enumerate(cells):
+        cx = MARGIN + i * cw
+        _rule(d, cx, ry, int(32 * S), theme.rgb(theme.GOLD))
+        vy = ry + int(22 * S)
+        if isnum:
+            vf = font(theme.SERIF, 54)
+            d.text((cx, vy), val, font=vf, fill=(255, 255, 255))
+            vh = _measure(d, val, vf)[1]
+        else:
+            vl, vf, vlh = fit(d, val, theme.SERIF, 30, 19, cw - int(24 * S), int(0.16 * H))
+            yy = vy
+            for ln in vl:
+                d.text((cx, yy), ln, font=vf, fill=(255, 255, 255))
+                yy += vlh
+            vh = vlh * len(vl)
+        lf = font(theme.SANS_SEMIBOLD, 11.5)
+        draw_tracked(d, label.upper(), lf, cx, vy + vh + int(12 * S), (219, 227, 234), int(2.5 * S))
+    return img
+
+
 # ---------- watermark + footer (applied to every slide) ----------
-_DARK_BOTTOM = {"cover", "feature-panel"}  # bottom sits over a dark/photo area
+_DARK_BOTTOM = {"cover", "feature-panel", "data"}  # bottom sits over a dark/photo area
 _logo_cache = {}
 
 
@@ -418,6 +459,7 @@ LAYOUTS = {
     "cover": layout_cover,
     "dashboard": layout_dashboard,
     "overview": layout_overview,
+    "data": layout_data_card,
     "feature-panel": layout_feature_panel,
     "feature-split": layout_feature_split,
     "feature-framed": layout_feature_framed,

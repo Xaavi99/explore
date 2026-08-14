@@ -147,9 +147,9 @@ def _slide_native(prs, rec, tmpdir, idx):
     s = prs.slides.add_slide(blank)
     lay = rec["layout"]
 
-    # dashboard: reuse the pixel-perfect Pillow render (branding already baked in)
-    if lay == "dashboard":
-        png = os.path.join(tmpdir, "dash_%d.jpg" % idx)
+    # dashboard + data cards: reuse the Pillow render (branding already baked in)
+    if lay in ("dashboard", "data"):
+        png = os.path.join(tmpdir, "img_%d.jpg" % idx)
         L.render_slide(rec).save(png, format="JPEG", quality=88, optimize=True, progressive=True)
         s.shapes.add_picture(png, 0, 0, width=prs.slide_width, height=prs.slide_height)
         return s

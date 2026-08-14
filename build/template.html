@@ -395,6 +395,11 @@
   .tray .chip:hover { color: var(--ink); }
   .tray .chip .x { font-size: 15px; line-height: 1; }
   .tray .t-empty { color: var(--ink-faint); font-size: 13px; font-style: italic; }
+  .tray .t-days { display: inline-flex; align-items: center; gap: 5px; }
+  .tray .t-days-label { font-size: 11px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .1em; margin-right: 2px; }
+  .tray .t-day { font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper-2); color: var(--ink-soft); }
+  .tray .t-day:hover { border-color: var(--brand); color: var(--ink); }
+  .tray .t-day.active { background: var(--brand); border-color: var(--brand); color: #fff; }
 </style>
 
 <header class="bar">
@@ -454,6 +459,12 @@
 <div class="tray" id="planTray" aria-label="Trip planner">
   <div class="tray-in">
     <span class="t-count" id="trayCount">0 destinations</span>
+    <div class="t-days" id="trayDays" role="group" aria-label="Trip length in days">
+      <span class="t-days-label">Days</span>
+      <button type="button" class="t-day" data-days="7">7</button>
+      <button type="button" class="t-day" data-days="10">10</button>
+      <button type="button" class="t-day" data-days="14">14</button>
+    </div>
     <input class="t-title" id="tripTitle" type="text" placeholder="Trip title (e.g. Kerala &amp; the Coast)" aria-label="Trip title">
     <button class="t-btn" id="dlPptx" disabled>Download presentation (.pptx)</button>
     <button class="t-btn t-ghost" id="planDone">Done</button>
@@ -754,6 +765,19 @@
   var dlBtn = document.getElementById("dlPptx");
   var planDoneBtn = document.getElementById("planDone");
   var picks = []; // ordered list of picked card elements
+  var selectedDays = null;
+  var trayDays = document.getElementById("trayDays");
+  Array.prototype.forEach.call(trayDays.querySelectorAll(".t-day"), function (b) {
+    b.addEventListener("click", function () {
+      var v = parseInt(b.getAttribute("data-days"), 10);
+      selectedDays = (selectedDays === v) ? null : v;
+      Array.prototype.forEach.call(trayDays.querySelectorAll(".t-day"), function (o) {
+        o.classList.toggle("active", parseInt(o.getAttribute("data-days"), 10) === selectedDays);
+      });
+      renderTray();
+    });
+  });
+  function capOf() { return selectedDays ? (DAYS_TO_STOPS[selectedDays] || picks.length) : picks.length; }
 
   function setPlanMode(on) {
     planMode = on;
@@ -772,7 +796,9 @@
   }
 
   function renderTray() {
-    trayCount.textContent = picks.length + (picks.length === 1 ? " destination" : " destinations");
+    var cap = capOf();
+    var note = (selectedDays && picks.length > cap) ? " · " + selectedDays + "-day fits " + cap : "";
+    trayCount.textContent = picks.length + (picks.length === 1 ? " destination" : " destinations") + note;
     dlBtn.disabled = picks.length === 0;
     if (!picks.length) {
       trayChips.innerHTML = '<span class="t-empty">Tap destinations above to add them, in order.</span>';
@@ -795,7 +821,8 @@
     var title = (tripTitleInput.value || "South India Journey").trim();
     var restore = dlBtn.textContent;
     dlBtn.classList.add("busy"); dlBtn.disabled = true; dlBtn.textContent = "Building…";
-    buildDeck(picks.map(function (c) { return c._rd; }), title)
+    var used = picks.slice(0, capOf()).map(function (c) { return c._rd; });
+    buildDeck(used, title, selectedDays)
       .then(function () { dlBtn.textContent = restore; dlBtn.classList.remove("busy"); dlBtn.disabled = false; })
       .catch(function (err) {
         console.error(err);
@@ -811,6 +838,7 @@
             inkFaint: "6f7c88", white: "FFFFFF", dark: "0a1520" };
   var SERIF = "Palatino Linotype", SANS = "Segoe UI";
   var FOOTER = "EXPLOREAIN  ·  PRIVATE SOUTH INDIA JOURNEYS";
+  var DAYS_TO_STOPS = { 7: 5, 10: 7, 14: 10 };
   var DISTRICTS = {
     "KOCHI": ["Ernakulam"], "MUNNAR": ["Idukki"], "THEKKADY": ["Idukki"],
     "ALLEPPEY": ["Alappuzha"], "KUMARAKOM": ["Kottayam"],
@@ -833,7 +861,7 @@
   }
   function destPhoto(d) { var k = DEST_IMG[d.name]; return k && IMAGES[k] ? IMAGES[k] : null; }
 
-  function computeStats(stops) {
+  function computeStats(stops, days) {
     var exp = 0, attr = 0, districts = {};
     stops.forEach(function (s) {
       var d = s.d;
@@ -841,12 +869,15 @@
       attr += (d.attractions_list ? d.attractions_list.length : 0);
       (DISTRICTS[d.name] || []).forEach(function (x) { districts[x] = 1; });
     });
-    var tiles = [[String(stops.length), "Destinations"], [String(exp), "Curated experiences"]];
+    var tiles = [[String(stops.length), "Destinations"]];
+    if (days) tiles.push([String(days), "Days"]);
+    tiles.push([String(exp), "Curated experiences"]);
     var nd = Object.keys(districts).length;
     if (nd) tiles.push([String(nd), "Districts"]);
     if (attr) tiles.push([String(attr), "Attractions"]);
     return tiles;
   }
+  function districtStr(name) { return (DISTRICTS[name] || ["—"]).join(", "); }
 
   // faint, transparent PNG of the logo (WebP -> canvas -> PNG keeps alpha)
   function makeWatermark(dataUri) {
@@ -889,7 +920,7 @@
     });
   }
 
-  function buildDeck(stops, title) {
+  function buildDeck(stops, title, days) {
     var jobs = [];
     jobs.push(cropJpeg(destPhoto(stops[0].d), 2000, 1125).then(function (u) { return ["cover", u]; }));
     stops.slice(0, 4).forEach(function (s, i) {
@@ -897,6 +928,7 @@
     });
     stops.forEach(function (s, i) {
       jobs.push(cropJpeg(destPhoto(s.d), 1500, 1500).then(function (u) { return ["feat" + i, u]; }));
+      jobs.push(cropJpeg(destPhoto(s.d), 1920, 1080).then(function (u) { return ["dat" + i, u]; }));
     });
     jobs.push(makeWatermark(LOGO.logo_light).then(function (o) { return ["wmLight", o]; }));
     jobs.push(makeWatermark(LOGO.logo_dark).then(function (o) { return ["wmDark", o]; }));
@@ -921,7 +953,7 @@
       s.addShape(pptx.ShapeType.rect, { x: 0, y: SLIDE_H * 0.5, w: SLIDE_W, h: SLIDE_H * 0.5, fill: { color: C.dark, transparency: 35 } });
       s.addText("EXPLOREAIN · SOUTH INDIA", { x: MIN, y: 5.0, w: 9, h: 0.35, fontFace: SANS, fontSize: 12, bold: true, color: "E9C983", charSpacing: 2 });
       s.addText(title, { x: MIN, y: 5.35, w: 10.6, h: 1.3, fontFace: SERIF, fontSize: 42, color: C.white });
-      s.addText(stops.length + " destinations · Exploreain", { x: MIN, y: 6.7, w: 10, h: 0.4, fontFace: SANS, fontSize: 15, color: "EEF2F6" });
+      s.addText((days ? days + " days · " : "") + stops.length + " destinations · Exploreain", { x: MIN, y: 6.7, w: 10, h: 0.4, fontFace: SANS, fontSize: 15, color: "EEF2F6" });
       chrome(s, true);
 
       // 2) dashboard — the journey in real numbers
@@ -929,7 +961,7 @@
       ds.addText("EXPLOREAIN · AT A GLANCE", { x: MIN, y: 0.85, w: 9, h: 0.35, fontFace: SANS, fontSize: 12, bold: true, color: C.gold, charSpacing: 2 });
       ds.addShape(pptx.ShapeType.rect, { x: MIN, y: 1.28, w: 0.6, h: 0.045, fill: { color: C.gold } });
       ds.addText(title + ", by the numbers", { x: MIN, y: 1.45, w: 11, h: 1.0, fontFace: SERIF, fontSize: 34, color: C.ink });
-      var tiles = computeStats(stops);
+      var tiles = computeStats(stops, days);
       var tn = tiles.length, tcols = tn <= 4 ? tn : 3, trows = Math.ceil(tn / tcols);
       var tgap = 0.3, gtop = 3.25, gbot = SLIDE_H - 1.15;
       var tW = (SLIDE_W - 2 * MIN - tgap * (tcols - 1)) / tcols, tH = (gbot - gtop - tgap * (trows - 1)) / trows;
@@ -957,10 +989,29 @@
       });
       chrome(s, false);
 
-      // 4) per-destination features, cycling three layouts
+      // 4) per destination: a DATA card, then its MAIN-ATTRACTION card
       var layouts = ["panel", "split", "framed"];
       stops.forEach(function (st, i) {
         var d = st.d, cp = copyFor(d), eyebrow = titleCase(st.r.name).toUpperCase();
+
+        // data card — hero photo with the location's figures over a scrim
+        var du = img["dat" + i], dsl = pptx.addSlide();
+        if (du) dsl.addImage({ data: du, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H }); else ph(dsl);
+        dsl.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: SLIDE_W, h: SLIDE_H * 0.42, fill: { color: C.dark, transparency: 45 } });
+        dsl.addShape(pptx.ShapeType.rect, { x: 0, y: SLIDE_H * 0.5, w: SLIDE_W, h: SLIDE_H * 0.5, fill: { color: C.dark, transparency: 25 } });
+        dsl.addText(eyebrow, { x: MIN, y: 0.9, w: 6, h: 0.35, fontFace: SANS, fontSize: 12, bold: true, color: "E9C983", charSpacing: 2 });
+        dsl.addText(titleCase(d.name), { x: MIN, y: 1.25, w: 9, h: 1.2, fontFace: SERIF, fontSize: 48, color: C.white });
+        var cells = [[String(d.details ? d.details.length : 0), "Experiences"], [String(d.attractions_list ? d.attractions_list.length : 0), "Attractions"], [districtStr(d.name), "District"]];
+        var cwid = (SLIDE_W - 2 * MIN) / 3, ryy = SLIDE_H - 2.05;
+        cells.forEach(function (cell, ci) {
+          var cx = MIN + ci * cwid, isnum = /^[0-9]+$/.test(cell[0]);
+          dsl.addShape(pptx.ShapeType.rect, { x: cx, y: ryy, w: 0.34, h: 0.045, fill: { color: C.gold } });
+          dsl.addText(cell[0], { x: cx, y: ryy + 0.16, w: cwid - 0.3, h: 0.95, fontFace: SERIF, fontSize: isnum ? 40 : 26, color: C.white, valign: "top" });
+          dsl.addText(cell[1].toUpperCase(), { x: cx, y: ryy + 1.15, w: cwid - 0.3, h: 0.35, fontFace: SANS, fontSize: 11, bold: true, color: "DBE3EA", charSpacing: 1.5 });
+        });
+        chrome(dsl, true);
+
+        // main-attraction (feature) card
         var u = img["feat" + i], sl = pptx.addSlide(), lay = layouts[i % 3];
         if (lay === "panel") {
           if (u) sl.addImage({ data: u, x: 0, y: 0, w: SLIDE_W, h: SLIDE_H }); else ph(sl);

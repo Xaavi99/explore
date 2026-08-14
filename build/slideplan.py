@@ -9,6 +9,16 @@ import imagemap
 # feature layouts cycled across the per-destination slides for visual rhythm
 FEATURE_CYCLE = ["feature-panel", "feature-split", "feature-framed"]
 
+# trip length -> how many stops comfortably fit
+DAYS_TO_STOPS = {7: 5, 10: 7, 14: 10}
+
+
+def fit_stops(itinerary, stops):
+    """Cap the stop list to what the chosen duration (days) comfortably fits."""
+    days = itinerary.get("days")
+    cap = DAYS_TO_STOPS.get(days)
+    return stops[:cap] if cap else stops
+
 # destination -> district(s) it sits in, for the "by the numbers" dashboard
 DISTRICTS = {
     "KOCHI": ["Ernakulam"], "MUNNAR": ["Idukki"], "THEKKADY": ["Idukki"],
@@ -38,20 +48,28 @@ def compute_stats(itinerary, stops):
             districts.add(dist)
     regions = len({s["region"] for s in stops})
 
-    tiles = [(str(dests), "Destinations"), (str(experiences), "Curated experiences")]
+    tiles = [(str(dests), "Destinations")]
+    if itinerary.get("days"):
+        tiles.append((str(itinerary["days"]), "Days"))
+    elif itinerary.get("nights"):
+        tiles.append((str(itinerary["nights"]), "Nights"))
+    tiles.append((str(experiences), "Curated experiences"))
     if districts:
         tiles.append((str(len(districts)), "Districts"))
     if attractions:
-        tiles.append((str(attractions), "Attractions to choose from"))
-    if itinerary.get("nights"):
-        tiles.append((str(itinerary["nights"]), "Nights"))
+        tiles.append((str(attractions), "Attractions"))
     if regions > 1:
         tiles.append((str(regions), "Regions"))
     return tiles
 
 
+def district_of(name):
+    return ", ".join(DISTRICTS.get(name, [])) or "—"
+
+
 def build_slide_plan(itinerary, stops, copy):
     """itinerary dict + resolved stops + copy_bundle -> [slide record]."""
+    stops = fit_stops(itinerary, stops)  # duration caps how many stops fit
     slides = []
     dest_copy = copy["destinations"]
 
@@ -85,19 +103,28 @@ def build_slide_plan(itinerary, stops, copy):
         "thumbs": thumbs,
     })
 
-    # 3) per-destination feature slides, cycling layouts
+    # 3) per destination: a DATA card, then its MAIN-ATTRACTION (feature) card
     for i, s in enumerate(stops):
+        dest = s["dest"]
         c = dest_copy.get(s["name"], {"headline": s["name"].title(), "caption": ""})
-        slides.append({
-            "layout": FEATURE_CYCLE[i % len(FEATURE_CYCLE)],
+        common = {
             "name": s["name"],
             "eyebrow": s["region"].title(),
-            "headline": c["headline"],
-            "caption": c["caption"],
             "region": s["region"],
             "image": s["slide_path"],
             "index": i + 1,
-        })
+        }
+        slides.append(dict(common, **{
+            "layout": "data",
+            "district": district_of(s["name"]),
+            "experiences": len(dest.get("details", [])),
+            "attractions": len(dest.get("attractions_list", [])),
+        }))
+        slides.append(dict(common, **{
+            "layout": FEATURE_CYCLE[i % len(FEATURE_CYCLE)],
+            "headline": c["headline"],
+            "caption": c["caption"],
+        }))
 
     # 4) closing
     slides.append({
@@ -117,6 +144,7 @@ if __name__ == "__main__":
     cat = load_catalogue()
     it = load_itinerary(sys.argv[1])
     stops, warn = resolve(it, cat)
+    stops = fit_stops(it, stops)
     bundle = copymod.copy_bundle(stops, it, cat)
     plan = build_slide_plan(it, stops, bundle)
     print(f"{len(plan)} slides:")
