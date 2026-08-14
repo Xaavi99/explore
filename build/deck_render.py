@@ -142,90 +142,79 @@ def _native_branding(slide, dark, tmpdir):
     slide.shapes.add_picture(lp, Inches(SLIDE_IN_W - 0.62 - lw), Inches(SLIDE_IN_H - 0.58), Inches(lw), Inches(lh))
 
 
-def _slide_native(prs, rec, tmpdir, idx):
-    blank = prs.slide_layouts[6]
-    s = prs.slides.add_slide(blank)
-    lay = rec["layout"]
+def _native_sections(prs, s, rec, tmpdir, idx):
+    """Editable region card: collage image column + text column (one flowing box)."""
+    side = rec.get("img_side", "left")
+    imgw = LW * 0.40
+    coll = L._collage(rec.get("left_paths", []), int(imgw * 2), int(LH * 2))
+    cp = os.path.join(tmpdir, f"coll{idx}.jpg")
+    coll.save(cp, format="JPEG", quality=88, optimize=True, progressive=True)
+    if side == "left":
+        s.shapes.add_picture(cp, 0, 0, IX(imgw), prs.slide_height)
+        tx0, tx1 = imgw + LW * 0.055, LW - M
+    else:
+        s.shapes.add_picture(cp, IX(LW - imgw), 0, IX(imgw), prs.slide_height)
+        tx0, tx1 = M, LW - imgw - LW * 0.05
+    maxw = tx1 - tx0
+    tcolor = theme.BRAND_2 if rec.get("title_brand") else theme.INK
+    paras = [
+        (rec["eyebrow"].upper(), SANS_N, 12, theme.GOLD, True, 8),
+        (rec["title"], SERIF_N, rec.get("title_pt", 34), tcolor, True, 12),
+    ]
+    if rec.get("intro"):
+        paras.append((rec["intro"], SANS_N, 14, theme.INK_SOFT, False, 14))
+    for label, body in rec["sections"]:
+        paras.append((label.upper(), SANS_N, 11.5, theme.GOLD, True, 3))
+        paras.append((body, SANS_N, 13, theme.INK, True, 12))
+    _text(s, tx0, LH * 0.12, maxw, LH * 0.78, paras)
 
-    # dashboard: reuse the pixel-perfect Pillow render (branding already baked in)
-    if lay == "dashboard":
-        png = os.path.join(tmpdir, "dash_%d.jpg" % idx)
-        L.render_slide(rec).save(png, format="JPEG", quality=88, optimize=True, progressive=True)
-        s.shapes.add_picture(png, 0, 0, width=prs.slide_width, height=prs.slide_height)
-        return s
+
+def _native_cta(prs, s, rec, tmpdir, idx):
+    panelw = LW * 0.52
+    s.shapes.add_picture(_cropped(rec.get("image"), LW - panelw, LH, tmpdir, f"cta{idx}"),
+                         IX(panelw), 0, IX(LW - panelw), prs.slide_height)
+    _rect(s, 0, 0, panelw, LH, theme.BRAND_2)
+    paras = [
+        (rec["eyebrow"].upper(), SANS_N, 12, "#e9c983", True, 12),
+        (rec["title"], SERIF_N, 40, "#ffffff", False, 14),
+    ]
+    for text, strong in rec["lines"]:
+        paras.append((text, SANS_N, 15 if strong else 14, "#ffffff" if strong else "#cfe0ee", strong, 6))
+    _text(s, M, LH * 0.24, panelw - 2 * M, LH * 0.5, paras)
+
+
+def _slide_native(prs, rec, tmpdir, idx):
+    """Keep itinerary-specific slides editable; rasterize fixed brand slides."""
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    lay = rec["layout"]
 
     if lay == "cover":
         s.shapes.add_picture(_cropped(rec.get("image"), LW, LH, tmpdir, f"cov{idx}"), 0, 0,
                              width=prs.slide_width, height=prs.slide_height)
-        _rect(s, 0, LH * 0.55, LW, LH * 0.45, "#0a1520").fill.fore_color.rgb  # scrim-ish
+        _rect(s, 0, LH * 0.55, LW, LH * 0.45, "#0a1520")
         _text(s, M, LH * 0.60, LW * 0.7, LH * 0.32, [
             (rec["kicker"].upper(), SANS_N, 13, theme.GOLD, True, 8),
             (rec["title"], SERIF_N, 60, "#ffffff", False, 6),
             (rec.get("caption", ""), SANS_N, 16, "#eef2f6", False, 0),
         ])
-    elif lay == "overview":
-        _bg(s, theme.PAPER)
-        _text(s, M, LH * 0.12, LW * 0.5, LH * 0.3,
-              [(rec["headline"], SERIF_N, 46, theme.INK, False, 0)])
-        _text(s, LW * 0.66, LH * 0.13, LW * 0.28, LH * 0.2,
-              [(rec["caption"], SANS_N, 15, theme.INK_SOFT, False, 0)])
-        thumbs = rec.get("thumbs", [])[:4]
-        if thumbs:
-            n = len(thumbs); gap = LW * 0.02
-            avail = LW - 2 * M; tw = (avail - gap * (n - 1)) / n; th = LH * 0.34
-            ty = LH - LH * 0.12 - th
-            for i, p in enumerate(thumbs):
-                tx = M + i * (tw + gap)
-                s.shapes.add_picture(_cropped(p, tw, th, tmpdir, f"ov{idx}_{i}"),
-                                     IX(tx), IY(ty), IX(tw), IY(th))
-    elif lay == "feature-panel":
-        pw = LW * 0.62
-        s.shapes.add_picture(_cropped(rec.get("image"), LW - pw, LH, tmpdir, f"fp{idx}"),
-                             IX(pw), 0, IX(LW - pw), prs.slide_height)
-        _rect(s, 0, 0, pw, LH, theme.BRAND_2)
-        _text(s, M, LH * 0.30, pw - 2 * M, LH * 0.5, [
-            (rec.get("eyebrow", "").upper(), SANS_N, 13, "#e9c983", True, 10),
-            (rec["headline"], SERIF_N, 44, "#ffffff", False, 8),
-            (rec.get("caption", ""), SANS_N, 15, "#e8edf2", False, 0),
-        ], anchor=MSO_ANCHOR.MIDDLE)
-    elif lay == "feature-split":
-        s.shapes.add_picture(_cropped(rec.get("image"), LW / 2, LH, tmpdir, f"fs{idx}"),
-                             0, 0, IX(LW / 2), prs.slide_height)
-        _bg(s, theme.PAPER)
-        x = LW / 2 + LW * 0.06
-        _rect(s, x, LH * 0.30, LW * 0.045, 4, theme.GOLD)
-        _text(s, x, LH * 0.32, LW - M - x, LH * 0.5, [
-            (rec.get("eyebrow", "").upper(), SANS_N, 13, theme.GOLD, True, 10),
-            (rec["headline"], SERIF_N, 42, theme.INK, False, 8),
-            (rec.get("caption", ""), SANS_N, 15, theme.INK_SOFT, False, 0),
-        ])
-    elif lay == "feature-framed":
-        _bg(s, theme.PAPER)
-        fx = LW * 0.57; fy = LH * 0.16
-        fw = LW - M - fx; fh = LH - 2 * fy
-        s.shapes.add_picture(_cropped(rec.get("image"), fw, fh, tmpdir, f"ff{idx}"),
-                             IX(fx), IY(fy), IX(fw), IY(fh))
-        _rect(s, M, LH * 0.34, LW * 0.045, 4, theme.GOLD)
-        _text(s, M, LH * 0.36, LW * 0.42, LH * 0.4, [
-            (rec.get("eyebrow", "").upper(), SANS_N, 13, theme.GOLD, True, 10),
-            (rec["headline"], SERIF_N, 44, theme.INK, False, 8),
-            (rec.get("caption", ""), SANS_N, 15, theme.INK_SOFT, False, 0),
-        ])
-    elif lay == "closing":
-        _bg(s, theme.PAPER)
-        y = LH * 0.32
-        logo = L.LOGO_LIGHT
-        if os.path.exists(logo):
-            from PIL import Image as PImage
-            im = PImage.open(logo); lh = LH * 0.075; lw = im.width * lh / im.height
-            s.shapes.add_picture(logo, IX(M), IY(y), IX(lw), IY(lh)); y += lh + 34
-        _rect(s, M, y, LW * 0.045, 4, theme.GOLD); y += 30
-        _text(s, M, y, LW * 0.7, LH * 0.3, [
-            (rec["title"], SERIF_N, 48, theme.INK, False, 8),
-            (rec.get("caption", ""), SANS_N, 15.5, theme.INK_SOFT, False, 0),
-        ])
+        _native_branding(s, True, tmpdir)
+        return s
 
-    _native_branding(s, lay in ("cover", "feature-panel"), tmpdir)
+    if lay == "sections" and rec.get("editable"):
+        _bg(s, theme.PAPER)
+        _native_sections(prs, s, rec, tmpdir, idx)
+        _native_branding(s, False, tmpdir)
+        return s
+
+    if lay == "cta":
+        _native_cta(prs, s, rec, tmpdir, idx)
+        _native_branding(s, True, tmpdir)
+        return s
+
+    # fixed brand slides: reuse the pixel-perfect Pillow render (branding baked in)
+    png = os.path.join(tmpdir, f"img_{idx}.jpg")
+    L.render_slide(rec).save(png, format="JPEG", quality=88, optimize=True, progressive=True)
+    s.shapes.add_picture(png, 0, 0, width=prs.slide_width, height=prs.slide_height)
     return s
 
 
