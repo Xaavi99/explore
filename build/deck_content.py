@@ -79,13 +79,13 @@ MAP = {
 STAYS = {
     "eyebrow": "Sanctuaries of Luxury",
     "title": "Handpicked Four-Star Stays",
-    "intro": "Comfortable, well-run four-star hotels and resorts, personally inspected, with contracted allocations and preferential rates for our partners.",
+    "intro": "Sleep well between adventures: four-star hotels and resorts we've walked through ourselves, chosen for comfort and character, with the best rooms and rates held for our travellers.",
     "band_key": "kovalam",
     "cards": [
-        ("Sterling Resorts", "Dependable hill and lake resorts at Munnar, Thekkady, Alleppey, Ooty and Kodaikanal — ideal for touring itineraries."),
-        ("Fortune & Lemon Tree", "Reliable four-star city hotels in Kochi, Chennai, Madurai, Mysuru and Bengaluru, with consistent service standards."),
-        ("Coastal & Island Resorts", "Novotel and Resort Rio in Goa; SeaShell and Symphony Palms in Havelock and Port Blair — relaxed beachfront comfort."),
-        ("Cinnamon, Amaya & Heritance", "Trusted Sri Lankan four-star names across Colombo, Kandy, Nuwara Eliya, Sigiriya, Bentota and the Yala park gates."),
+        ("Sterling Resorts", "Wake to misty hills and still lakes at Munnar, Thekkady, Alleppey, Ooty and Kodaikanal — dependable comfort built around the view."),
+        ("Fortune & Lemon Tree", "Easy, well-placed city bases in Kochi, Chennai, Madurai, Mysuru and Bengaluru, so you land, settle in and start exploring."),
+        ("Coastal & Island Resorts", "Barefoot mornings at Novotel and Resort Rio in Goa, SeaShell and Symphony Palms in Havelock and Port Blair — the sea always a few steps away."),
+        ("Cinnamon, Amaya & Heritance", "Sri Lanka's best-loved four-star names in Colombo, Kandy, Nuwara Eliya, Sigiriya, Bentota and by the Yala park gates — comfort that matches the scenery."),
     ],
 }
 
@@ -113,16 +113,16 @@ THEMES = {
 }
 
 WHYCHOOSE = {
-    "eyebrow": "Why Partner With Us",
+    "eyebrow": "Why Travel With Us",
     "title": "Why Choose Exploreain",
-    "intro": "Built for direct, high-value clients who value a dependable ground partner.",
+    "intro": "The details that turn a good trip into an effortless one — handled quietly, so you don't have to think about them.",
     "cards": [
-        ("Seamless Coordination", "Expert local handling from arrival to departure."),
-        ("Our Own Guides", "Consistent standards and no last-minute substitutions."),
-        ("Premium Selection", "Carefully chosen guides and premium accommodations."),
-        ("Authentic, In Comfort", "Genuine experiences delivered to international standards."),
-        ("Clear & Reliable", "Punctuality, transparent invoicing and clear cancellation terms."),
-        ("Always On", "24/7 emergency line, vetted vehicles and real-time trip monitoring."),
+        ("Seamless Coordination", "From the moment you land to the moment you leave, we're a step ahead — cars, guides and check-ins timed so you never wait."),
+        ("Our Own Guides", "Our own trained guides travel with you start to finish — the same familiar face, not a last-minute substitute."),
+        ("Premium Selection", "Every guide and hotel on your itinerary has been visited and vetted by us in person, not picked off a list."),
+        ("Authentic, In Comfort", "Real encounters with local life, without giving up the comforts you're used to."),
+        ("Clear & Reliable", "On time, every time, with straightforward pricing and cancellation terms — no surprises."),
+        ("Always On", "A 24/7 emergency line, inspected vehicles and live trip monitoring, so help is always one call away."),
     ],
 }
 

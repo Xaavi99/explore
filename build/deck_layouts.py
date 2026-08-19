@@ -158,6 +158,13 @@ def _wrap_block(d, text, fnt, x, y, maxw, fill, spacing=1.3):
     return draw_lines(d, lines, fnt, x, y, fill, (asc + desc) * spacing)
 
 
+def _text_h(d, text, fnt, maxw, spacing=1.3):
+    """Height a wrapped text block will occupy, without drawing it."""
+    lines = _wrap(d, text, fnt, maxw)
+    asc, desc = fnt.getmetrics()
+    return len(lines) * (asc + desc) * spacing
+
+
 # ---------- scrims ----------
 def vgrad_scrim(size, color_rgb, a_top, a_bottom, start=0.0):
     """Vertical alpha gradient overlay (RGBA)."""
@@ -278,9 +285,27 @@ def layout_cards(rec):
     n = len(cards)
     gap = int(0.022 * W)
     cw = (W - 2 * MARGIN - gap * (n - 1)) // n
-    cy = y
-    chh = H - int(0.085 * H) - cy
     pad = int(24 * S)
+    tfnt, bfnt = font(theme.SERIF, 20), font(theme.SANS_SEMIBOLD, 12.5)
+    sf, sbf = font(theme.SANS_SEMIBOLD, 10.5), font(theme.SANS, 12)
+    sfh = _measure(d, "AG", sf)[1]
+
+    # Size every card from its own content (title + body + optional "suited"
+    # block), not stretched to fill the slide — a shared height keeps the row
+    # aligned while avoiding large dead space in shorter cards.
+    content_hs = []
+    for card in cards:
+        title, body = card[0], card[1]
+        suited = card[2] if len(card) > 2 else None
+        ch = _text_h(d, title, tfnt, cw - 2 * pad, 1.06) + int(14 * S)
+        ch += _text_h(d, body, bfnt, cw - 2 * pad, 1.32)
+        if suited:
+            ch += (int(28 * S) + max(3, int(4 * S)) + int(14 * S)
+                   + sfh + int(6 * S) + _text_h(d, suited, sbf, cw - 2 * pad, 1.2))
+        content_hs.append(ch)
+    chh = max(content_hs) + 2 * pad
+    cy = y
+
     for i, card in enumerate(cards):
         cx = MARGIN + i * (cw + gap)
         d.rectangle([cx, cy, cx + cw, cy + chh], fill=theme.rgb(theme.WHITE),
@@ -289,19 +314,18 @@ def layout_cards(rec):
         yy = cy + pad + int(8 * S)
         title, body = card[0], card[1]
         suited = card[2] if len(card) > 2 else None
-        yy = _wrap_block(d, title, font(theme.SERIF, 20), cx + pad, yy, cw - 2 * pad,
+        yy = _wrap_block(d, title, tfnt, cx + pad, yy, cw - 2 * pad,
                          theme.rgb(theme.INK), spacing=1.06)
         yy += int(14 * S)
-        _wrap_block(d, body, font(theme.SANS_SEMIBOLD, 12.5), cx + pad, yy, cw - 2 * pad,
+        yy = _wrap_block(d, body, bfnt, cx + pad, yy, cw - 2 * pad,
                     theme.rgb(theme.INK_SOFT), spacing=1.32)
         if suited:
-            sf = font(theme.SANS_SEMIBOLD, 10.5)
-            sfh = _measure(d, "AG", sf)[1]
-            sy = cy + chh - pad - sfh * 2 - int(10 * S)
-            _rule(d, cx + pad, sy - int(14 * S), int(0.03 * W), theme.rgb(theme.GOLD))
+            sy = yy + int(28 * S)
+            _rule(d, cx + pad, sy, int(0.03 * W), theme.rgb(theme.GOLD))
+            sy += max(3, int(4 * S)) + int(14 * S)
             draw_tracked(d, "BEST SUITED FOR", sf, cx + pad, sy, theme.rgb(theme.GOLD), int(2 * S))
             sy += sfh + int(6 * S)
-            d.text((cx + pad, sy), suited, font=font(theme.SANS, 12), fill=theme.rgb(theme.INK))
+            d.text((cx + pad, sy), suited, font=sbf, fill=theme.rgb(theme.INK))
     return img
 
 
@@ -326,9 +350,16 @@ def layout_grid(rec):
     rows = (len(cards) + cols - 1) // cols
     gap = int(0.02 * W)
     cw = (W - 2 * MARGIN - gap * (cols - 1)) // cols
-    top = y
-    chh = (H - int(0.11 * H) - top - gap * (rows - 1)) // rows
     pad = int(24 * S)
+    tfnt, bfnt = font(theme.SERIF, 19), font(theme.SANS, 13)
+
+    # Size every cell from its own content, not stretched to fill the grid.
+    content_hs = [
+        _text_h(d, t, tfnt, cw - 2 * pad, 1.06) + int(10 * S) + _text_h(d, b, bfnt, cw - 2 * pad, 1.3)
+        for t, b in cards
+    ]
+    chh = max(content_hs) + 2 * pad
+    top = y
     for i, (t, b) in enumerate(cards):
         r, c = divmod(i, cols)
         cx = MARGIN + c * (cw + gap)
@@ -337,10 +368,10 @@ def layout_grid(rec):
                     outline=theme.rgb(theme.LINE), width=max(1, int(1 * S)))
         _rule(d, cx, cy, cw, theme.rgb(theme.GOLD), thick=max(3, int(4 * S)))
         yy = cy + pad + int(6 * S)
-        yy = _wrap_block(d, t, font(theme.SERIF, 19), cx + pad, yy, cw - 2 * pad,
+        yy = _wrap_block(d, t, tfnt, cx + pad, yy, cw - 2 * pad,
                          theme.rgb(theme.INK), spacing=1.06)
         yy += int(10 * S)
-        _wrap_block(d, b, font(theme.SANS, 13), cx + pad, yy, cw - 2 * pad,
+        _wrap_block(d, b, bfnt, cx + pad, yy, cw - 2 * pad,
                     theme.rgb(theme.INK_SOFT), spacing=1.3)
     return img
 
