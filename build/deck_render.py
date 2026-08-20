@@ -266,12 +266,17 @@ def generate(plan, slug, title, distroot, theme_name="classic"):
     build_pdf(pngs, pdf)
     build_image_pptx(pngs, pptx_img)
 
+    pptx_edit = os.path.join(outdir, f"{slug}-editable.pptx")
     result = {"pdf": pdf, "pptx": pptx_img, "pptx_editable": None, "slides": pngs}
     if theme_name == "classic":
         # No native-editable renderer for other themes yet (_slide_native
         # only understands the blue layout records) — pixel PDF/PPTX only.
-        pptx_edit = os.path.join(outdir, f"{slug}-editable.pptx")
         with tempfile.TemporaryDirectory() as td:
             build_editable_pptx(plan, pptx_edit, td)
         result["pptx_editable"] = pptx_edit
+    elif os.path.exists(pptx_edit):
+        # Remove a stale editable pptx from an earlier classic-theme build of
+        # this same slug — otherwise it lingers with old content instead of
+        # reflecting the theme actually just built.
+        os.remove(pptx_edit)
     return result

@@ -52,6 +52,11 @@ def main(argv):
             internal_pdf = deck_render.generate_internal_pdf(internal_plan, slug, DIST, theme_name=theme_name)
             print(f"  {'internal_pdf':14s} {os.path.relpath(internal_pdf, ROOT)}  (confidential — not for clients)")
         else:
+            # Remove a stale internal PDF from an earlier classic-theme build
+            # of this same slug — otherwise it lingers with old content.
+            stale = os.path.join(DIST, slug, f"{slug}-internal.pdf")
+            if os.path.exists(stale):
+                os.remove(stale)
             print(f"  {'internal_pdf':14s} (not available for the {theme_name} theme — no Named Stays layout yet)")
     return 0
 
