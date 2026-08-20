@@ -1,0 +1,27 @@
+{
+  "route": [
+    {"stop": "Kochi", "nights": 1, "why": "A soft-landing night only — this itinerary saves its time for the stops that matter more to a couple."},
+    {"stop": "Munnar", "nights": 2, "why": "Hill-country romance: sunrise, tea gardens and a private candlelit dinner among the estates."},
+    {"stop": "Thekkady", "nights": 1, "why": "A short, gentle interim stop that also breaks up two long drives back to back."},
+    {"stop": "Kumarakom to Alleppey (private houseboat)", "nights": 1, "why": "A private kettuvallam for two — the single most romantic night in any Kerala itinerary."},
+    {"stop": "Poovar Island", "nights": 3, "why": "The private, secluded close — floating cottages on a sandbar, no resort strip."}
+  ],
+  "days": [
+    {"day": 1, "label": "Arrive Kochi", "body": "Transfer, check in, rest. No activity scheduled."},
+    {"day": 2, "label": "Drive to Munnar", "body": "A scenic ~4-hour hill drive. Arrive by mid-afternoon to a private welcome tea at the estate."},
+    {"day": 3, "label": "Munnar", "body": "A sunrise trek for two with a naturalist guide, a private tea-estate walk and tasting, then a candlelit dinner among the gardens."},
+    {"day": 4, "label": "Drive to Thekkady", "body": "A ~3.5–4 hour drive. Afternoon spice-plantation walk together; a deliberately light, short evening."},
+    {"day": 5, "label": "Drive to Kumarakom, board houseboat", "body": "Board by late afternoon — a private kettuvallam, just the couple and crew, sunset cruise into the backwaters, dinner cooked onboard."},
+    {"day": 6, "label": "Disembark, drive to Poovar", "body": "The trip's longest leg (~4 hrs), placed mid-trip rather than on arrival or departure day. Boat transfer to the floating cottage on arrival."},
+    {"day": 7, "label": "Poovar, unstructured", "body": "Nothing booked. Optional couple's spa treatment or a sunset boat ride on the estuary."},
+    {"day": 8, "label": "Poovar, free", "body": "Paragliding at Varkala can be arranged as a day excursion, or simply another unstructured day."},
+    {"day": 9, "label": "Depart Trivandrum", "body": "About an hour's transfer from Poovar."}
+  ],
+  "stays": [
+    {"stop": "Kochi", "name": "Brunton Boatyard (CGH Earth)", "why": "One night only, but worth the setting for an arrival night."},
+    {"stop": "Munnar", "name": "Windermere Estate", "why": "A private plantation-bungalow feel — the right scale for a couple, not a large resort."},
+    {"stop": "Thekkady", "name": "Spice Village (CGH Earth)", "why": "Cottage rooms, kept deliberately low-key for this shorter stop."},
+    {"stop": "Kumarakom", "name": "Private kettuvallam (two-cabin charter)", "why": "Booked as a single-couple charter, not shared — the detail that makes the night actually private."},
+    {"stop": "Poovar Island", "name": "Floating-cottage / private-pool villa", "why": "Access is by boat only — itself part of the appeal, and the defining choice of this itinerary."}
+  ]
+}

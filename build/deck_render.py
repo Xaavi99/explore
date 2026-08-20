@@ -6,7 +6,7 @@
   the same slide plan + theme; it is close to, not pixel-identical with, the image
   outputs, and its text is editable (fonts depend on the viewer's machine).
 """
-import os, tempfile
+import os, glob, tempfile
 import pymupdf
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
@@ -38,8 +38,14 @@ def C(hex_str):
 
 # ---------- pixel-perfect PNG rendering ----------
 def render_pngs(plan, outdir, quality=88):
-    """Render each slide to a JPEG (small, email-friendly; text stays crisp at 2x)."""
+    """Render each slide to a JPEG (small, email-friendly; text stays crisp at 2x).
+    Clears any stale slide_NN.jpg first — otherwise a leftover image from a
+    longer previous plan (e.g. a confidential slide dropped from the client
+    deck) would linger in the output folder even though no current slide
+    record points to it."""
     os.makedirs(outdir, exist_ok=True)
+    for stale in glob.glob(os.path.join(outdir, "slide_*.jpg")):
+        os.remove(stale)
     paths = []
     for i, rec in enumerate(plan):
         img = L.render_slide(rec)
@@ -225,6 +231,19 @@ def build_editable_pptx(plan, out_path, tmpdir):
     for i, rec in enumerate(plan):
         _slide_native(prs, rec, tmpdir, i)
     prs.save(out_path)
+
+
+def generate_internal_pdf(plan, slug, distroot):
+    """A PDF-only render for internal use (e.g. a plan with the named-stays
+    slide included) — rendered to a throwaway temp dir so the confidential
+    slide's PNG never lands in the client-facing dist/<slug>/slides/ folder."""
+    outdir = os.path.join(distroot, slug)
+    os.makedirs(outdir, exist_ok=True)
+    pdf = os.path.join(outdir, f"{slug}-internal.pdf")
+    with tempfile.TemporaryDirectory() as td:
+        pngs = render_pngs(plan, td)
+        build_pdf(pngs, pdf)
+    return pdf
 
 
 # ---------- orchestration ----------

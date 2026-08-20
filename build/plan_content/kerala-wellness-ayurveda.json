@@ -1,0 +1,19 @@
+{
+  "route": [
+    {"stop": "Trivandrum arrival / short transfer", "nights": 1, "why": "A soft-landing night close to the airport before the retreat programme begins."},
+    {"stop": "Ayurveda retreat, Kollam district", "nights": 6, "why": "The minimum for a genuine short programme — physician consultation, five treatment days and a rest day."},
+    {"stop": "Varkala", "nights": 2, "why": "Coastal wind-down and a gentle reintroduction to normal life before flying home."}
+  ],
+  "days": [
+    {"day": 1, "label": "Arrive Trivandrum", "body": "Transfer to the Kollam-district retreat (~1.5 hrs). Check-in, orientation and a light early dinner — no consultation on arrival day."},
+    {"day": 2, "label": "Physician consultation", "body": "An Ayurvedic physician assesses constitution and imbalance and prescribes the programme — treatments, sequence and diet."},
+    {"day": "3–7", "label": "Treatment programme", "body": "Five days on the prescribed regimen: daily oil massage and/or oil-pouring sessions, morning yoga and timed meals, with one rest day placed by the physician."},
+    {"day": 8, "label": "Drive to Varkala", "body": "A short, easy ~1-hour transfer. Afternoon free to walk the cliff path."},
+    {"day": 9, "label": "Varkala, unstructured", "body": "Cliff-top walks, the Papanasam Beach mineral springs, or simply the beach — nothing booked."},
+    {"day": 10, "label": "Depart", "body": "Transfer to Trivandrum airport, about 45 minutes."}
+  ],
+  "stays": [
+    {"stop": "Kollam district (retreat)", "name": "Kalari Kovilakom (CGH Earth)", "why": "A restored 18th-century palace run purely as a physician-led Ayurveda retreat — the reference pick."},
+    {"stop": "Varkala", "name": "Vivenda dos Palhaços", "why": "A small, design-led, cliff-adjacent boutique property — an easy step down from a quiet retreat."}
+  ]
+}

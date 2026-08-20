@@ -1,0 +1,20 @@
+{
+  "route": [
+    {"stop": "Kannur & Bekal", "nights": 4, "why": "Deliberately generous — Theyyam performances run on a shrine's schedule, and a shorter stay risks missing one."},
+    {"stop": "Wayanad", "nights": 3, "why": "Caves, a peak trek, a dam and a wildlife sanctuary genuinely need three days, not a rushed two."}
+  ],
+  "days": [
+    {"day": 1, "label": "Arrive Kannur", "body": "Transfer to the Bekal/Kannur base, 40–60 minutes. Rest; no activity."},
+    {"day": 2, "label": "Bekal Fort & coast", "body": "India's largest, best-preserved coastal fort in the morning, then Muzhappilangad Drive-In Beach — one of the few beaches in India where driving on the sand is legal."},
+    {"day": 3, "label": "Kannur town & craft", "body": "St. Angelo's Fort, a handloom-weaving cooperative visit, and Payyambalam Beach in the late afternoon."},
+    {"day": 4, "label": "Theyyam, timing-dependent", "body": "Scheduled around the live Theyyam ritual calendar rather than fixed in advance, with a photography-etiquette briefing beforehand."},
+    {"day": 5, "label": "Drive to Wayanad", "body": "An easy ~2–2.5 hour drive via Mananthavady, then a gentle afternoon walk at Pookode Lake."},
+    {"day": 6, "label": "Wayanad, active day", "body": "The six-thousand-year-old Edakkal Caves petroglyphs in the morning; the Chembra Peak trek or the gentler Soochipara Waterfalls walk in the afternoon."},
+    {"day": 7, "label": "Wildlife & coffee", "body": "An early wildlife-sanctuary safari (elephant, gaur, sambar), then a coffee and spice estate walk ending in a cupping session."},
+    {"day": 8, "label": "Depart Calicut", "body": "About 1.5–2 hours from Wayanad."}
+  ],
+  "stays": [
+    {"stop": "Kannur & Bekal", "name": "Neeleshwar Hermitage", "why": "An independent, beachfront, thatched-cottage boutique near Bekal — the most distinctive option on this coast."},
+    {"stop": "Wayanad", "name": "Tranquil (CGH Earth)", "why": "A working plantation homestay on a coffee and spice estate, genuinely lived-in rather than built for tourism."}
+  ]
+}

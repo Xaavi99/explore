@@ -22,10 +22,12 @@ do not need the `anthropic` package or any API call to "see" a slide).
   replicate just because "the reference does it."
 - **Layout engine**: `build/deck_layouts.py` — the single Pillow renderer, one
   function per layout type (`cover`, `sections`, `cards`, `grid`, `cta`,
-  `quote`), dispatched via `LAYOUTS`/`render_slide()`. All geometry, color,
-  and type sizing lives here. `build/theme.py` holds the palette/font
-  constants; `build/deck_content.py` and `build/slideplan.py` hold copy and
-  the itinerary -> slide-plan logic.
+  `quote`, `table`, `days`), dispatched via `LAYOUTS`/`render_slide()`. All
+  geometry, color, and type sizing lives here. `build/theme.py` holds the
+  palette/font constants; `build/deck_content.py` and `build/slideplan.py`
+  hold copy and the itinerary -> slide-plan logic. `table`/`days` are driven
+  by `build/plan_content/*.json` (see `deck-content` agent) rather than
+  `deck_content.py`.
 - **No QA exists anywhere else in the pipeline** — no tests, no
   overflow/bounds checks. You are the only check. Known risk spots worth
   extra scrutiny every time:
@@ -81,10 +83,16 @@ do not need the `anthropic` package or any API call to "see" a slide).
 5. **Guardrails — do not regress prior decisions**:
    - Keep the blue palette. Never move `theme.py` colors toward the
      reference's green/gold.
-   - Do not reintroduce the "by the numbers" dashboard, per-destination
-     feature cards, or a trip-duration selector — all were built and then
-     explicitly reverted by the user; if you think one would fix something,
-     flag it as a suggestion instead of building it.
+   - Do not reintroduce the "by the numbers" dashboard or a trip-duration
+     selector — both were built and then explicitly reverted by the user; if
+     you think one would fix something, flag it as a suggestion instead of
+     building it. This does NOT cover the `table`/`days` layouts or the
+     `grid`-based stays slide that appear when an itinerary carries a
+     `plan_content` sidecar (see `build/plan_content/`, wired in
+     `slideplan.py`) — that's a distinct, current, user-requested feature
+     sourced from the `planning/kerala/*.md` models, not a revival of the old
+     reverted per-destination feature-card design. Treat it like any other
+     layout: polish it, don't remove it.
    - Keep all three outputs building cleanly for every itinerary you touch:
      `<slug>.pdf`, `<slug>.pptx`, `<slug>-editable.pptx`.
 

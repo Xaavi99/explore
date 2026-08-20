@@ -1,9 +1,18 @@
 """Compile an itinerary into an ordered list of slide records.
 
-The deck mirrors the company-overview template (blue palette). Most slides are
-fixed brand content from deck_content; the cover and the REGION cards are the
-only itinerary-driven slides — region cards are the picked stops grouped by
-catalogue region. A slide record is a plain dict consumed by every renderer.
+Two distinct deck shapes come out of build_slide_plan, chosen by whether the
+itinerary carries a `plan_content` sidecar (see build/plan_content/):
+
+- **Tailored-plan deck** (plan_content present): a lean, plan-specific deck —
+  cover, an overall stops summary (route/nights), then day-by-day. No general
+  brand/marketing slides. Property names (plan_content's `stays`) are
+  internal-only, gated behind build_slide_plan's `internal` flag.
+- **General company-overview deck** (no plan_content): the original brand
+  deck mirroring the company-overview template (blue palette) — cover, fixed
+  brand content from deck_content, and REGION cards (picked stops grouped by
+  catalogue region).
+
+A slide record is a plain dict consumed by every renderer.
 """
 import imagemap
 import theme
@@ -51,22 +60,91 @@ def _region_cards(stops):
     return cards
 
 
-def build_slide_plan(itinerary, stops):
-    """itinerary dict + resolved stops -> [slide record]."""
-    slides = []
+def _route_slide(pc):
+    """Route & Nights table slide from plan_content."""
+    rows = [(r["stop"], r["nights"], r["why"]) for r in pc["route"]]
+    return {
+        "layout": "table",
+        "eyebrow": "Route & Pacing",
+        "title": "Where You'll Stay, Night by Night",
+        "intro": pc.get("route_intro", ""),
+        "rows": rows,
+    }
 
-    # 1) cover — itinerary title + client
+
+def _day_bound(day, end):
+    """First/last day number out of a `day` field that may itself be a range
+    (e.g. "3–7" for a merged multi-day block, per Kerala wellness-model style)."""
+    parts = str(day).replace("–", "-").split("-")
+    return parts[-1] if end else parts[0]
+
+
+def _day_slides(pc, per_slide=3):
+    """One or more Day-by-Day slides from plan_content, chunked so none overflow.
+    Titles are derived from the actual `day` values (not chunk position), since
+    a merged entry like "3–7" makes position and day-number diverge."""
+    entries = pc["days"]
+    slides = []
+    for i in range(0, len(entries), per_slide):
+        chunk = entries[i:i + per_slide]
+        lo, hi = _day_bound(chunk[0]["day"], False), _day_bound(chunk[-1]["day"], True)
+        title = f"Day {lo}" if lo == hi else f"Days {lo}–{hi}"
+        days = [(f"Day {d['day']} — {d['label']}", d["body"]) for d in chunk]
+        slides.append({
+            "layout": "days", "eyebrow": "Day by Day", "title": title, "days": days,
+        })
+    return slides
+
+
+def _stays_slide(pc):
+    """Named-stays grid slide from plan_content (reuses the fixed grid layout).
+    INTERNAL ONLY — never shipped to clients, so our stay partners stay
+    confidential; see build_slide_plan's `internal` flag."""
+    cards = [(f"{s['stop']} — {s['name']}", s["why"]) for s in pc["stays"]]
+    return {
+        "layout": "grid",
+        "eyebrow": "Named Stays (Internal)",
+        "title": "Where We Recommend You Stay",
+        "intro": "Real, well-established properties chosen per stop for this itinerary.",
+        "cards": cards,
+    }
+
+
+def _cover_slide(itinerary, stops):
     cover_path = imagemap.slide_path(itinerary["cover_key"]) if itinerary.get("cover_key") else None
     if not cover_path:
         cover_path = next((s["slide_path"] for s in stops if s["slide_path"]), None)
     caption_bits = [b for b in (itinerary.get("client"), itinerary.get("dates")) if b]
-    slides.append({
+    return {
         "layout": "cover",
         "kicker": (itinerary.get("prepared_by") or C.COMPANY) + " · South India",
         "title": itinerary.get("title", "South India Tour"),
         "caption": "  ·  ".join(caption_bits),
         "image": cover_path,
-    })
+    }
+
+
+def build_slide_plan(itinerary, stops, internal=False):
+    """itinerary dict + resolved stops -> [slide record].
+
+    A tailored-plan itinerary (one with a `plan_content` sidecar) gets a lean,
+    plan-specific deck: cover, an overall stops summary (route/nights), then
+    day-by-day — none of the general brand/marketing slides. `internal=True`
+    additionally includes the named-stays slide (specific hotel/property
+    names) for internal planning use; the client-facing deck (the default)
+    never includes it — property partners are confidential.
+
+    An itinerary with no `plan_content` gets the general company-overview
+    brand deck (unchanged from before tailored plans existed)."""
+    pc = itinerary.get("plan_content_data")
+    if pc:
+        slides = [_cover_slide(itinerary, stops), _route_slide(pc)]
+        slides += _day_slides(pc)
+        if internal:
+            slides.append(_stays_slide(pc))
+        return slides
+
+    slides = [_cover_slide(itinerary, stops)]
 
     # 2) About (fixed)
     slides.append({

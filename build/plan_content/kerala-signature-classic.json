@@ -1,0 +1,27 @@
+{
+  "route": [
+    {"stop": "Kochi", "nights": 2, "why": "Soft-landing arrival day, then a full day for Fort Kochi's heritage quarter."},
+    {"stop": "Munnar", "nights": 2, "why": "Tea country needs a sunrise and a full estate day — one night is never enough."},
+    {"stop": "Thekkady", "nights": 1, "why": "Periyar is one strong day of boat safari or forest walk — a second night repeats it."},
+    {"stop": "Kumarakom to Alleppey (houseboat)", "nights": 1, "why": "One overnight on the water, boarding at Kumarakom, cruising to Alleppey by morning."},
+    {"stop": "Marari Beach", "nights": 2, "why": "The wind-down stop near the airport, with a genuinely unstructured day built in."}
+  ],
+  "days": [
+    {"day": 1, "label": "Arrive Kochi", "body": "Land, transfer to the hotel and rest. No sightseeing scheduled — the soft-landing day the whole pace of this trip is built around."},
+    {"day": 2, "label": "Fort Kochi", "body": "A full day on foot through the heritage quarter — Chinese fishing nets, Mattancherry Palace, Jew Town — closing with an evening Kathakali performance."},
+    {"day": 3, "label": "Drive to Munnar", "body": "A scenic ~4-hour hill drive via waterfalls and roadside spice stops. Arrive by mid-afternoon; the rest of the day is free at the estate."},
+    {"day": 4, "label": "Munnar, full day", "body": "Eravikulam National Park at sunrise for the Nilgiri tahr, then a guided tea-estate walk and tasting in the afternoon."},
+    {"day": 5, "label": "Drive to Thekkady", "body": "A relaxed ~3.5-hour drive via Kumily, arriving for lunch. Afternoon spice-plantation walk; evening Kalaripayattu and Kathakali double bill."},
+    {"day": 6, "label": "Periyar, then Kumarakom", "body": "An early boat safari on Periyar Lake for the best light and wildlife odds, then on to Kumarakom to board the houseboat before dusk."},
+    {"day": 7, "label": "Overnight houseboat", "body": "Cruise the Vembanad backwaters from Kumarakom, meals cooked onboard, mooring before dusk. Disembark at Alleppey for Marari Beach."},
+    {"day": 8, "label": "Marari Beach, unstructured", "body": "Nothing booked — the trip's built-in free day. Just the beach and the property."},
+    {"day": 9, "label": "Depart", "body": "Transfer to Kochi airport, roughly 1.5–2 hours from Marari."}
+  ],
+  "stays": [
+    {"stop": "Kochi", "name": "Brunton Boatyard (CGH Earth)", "why": "Waterfront colonial shipyard conversion with harbour views onto the fishing nets — the reference pick."},
+    {"stop": "Munnar", "name": "Windermere Estate", "why": "A small, independently run plantation-bungalow property with genuinely personal service."},
+    {"stop": "Thekkady", "name": "Spice Village (CGH Earth)", "why": "Cottage rooms set in a working spice garden, closest in feel to the afternoon's plantation walk."},
+    {"stop": "Kumarakom", "name": "Private kettuvallam houseboat", "why": "A converted rice barge with dedicated crew and cook, booked directly for consistent quality and safety."},
+    {"stop": "Marari Beach", "name": "Marari Beach Resort (CGH Earth)", "why": "The original cottage-style resort, right on the fishing village beach it's named for."}
+  ]
+}

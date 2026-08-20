@@ -9,9 +9,14 @@ Layouts mirror the company-overview template, recolored to the blue palette:
   sections  — image column + eyebrow/title/intro/labeled blocks (About, Map,
               Cultural, and the itinerary-driven Region cards)
   cards     — photo band header + a row of white cards (Stays, Themes)
-  grid      — header + 2x3 white card grid (Why Choose)
+  grid      — header + 2x3 white card grid (Why Choose, and tailored-plan
+              named Stays when plan_content is present)
   cta       — split brand panel + photo (Contact)
   quote     — full-bleed photo + centered italic quote (closing)
+  table     — header + a list of route rows (stop / nights / why) — the
+              tailored-plan Route & Nights slide
+  days      — header + stacked day-by-day entries — the tailored-plan
+              Day by Day slide(s)
 """
 import os
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -376,6 +381,65 @@ def layout_grid(rec):
     return img
 
 
+def layout_table(rec):
+    """Header + a list of route rows: stop name | nights | why. Route & Nights."""
+    img = Image.new("RGB", (W, H), theme.rgb(theme.PAPER_3))
+    d = ImageDraw.Draw(img)
+    x = MARGIN
+    y = int(0.09 * H)
+    ef = font(theme.SANS_SEMIBOLD, 12)
+    draw_tracked(d, rec["eyebrow"].upper(), ef, x, y, theme.rgb(theme.GOLD), int(3 * S))
+    y += _measure(d, "AG", ef)[1] + int(14 * S)
+    hl, hf, hlh = fit(d, rec["title"], theme.SERIF, 40, 26, int(W * 0.7), int(H * 0.14))
+    y = draw_lines(d, hl, hf, x, y, theme.rgb(theme.INK), hlh)
+    y += int(8 * S)
+    if rec.get("intro"):
+        y = _wrap_block(d, rec["intro"], font(theme.SANS, 13.5), x, y, W - 2 * MARGIN,
+                        theme.rgb(theme.INK_SOFT), spacing=1.3)
+    y += int(22 * S)
+
+    namew, nightsw = int(0.27 * W), int(0.13 * W)
+    namew -= int(0.015 * W)  # small gutter before the nights column
+    whyx = x + namew + nightsw
+    whyw = W - MARGIN - whyx
+    gf, wf = font(theme.SANS_SEMIBOLD, 11.5), font(theme.SANS, 13)
+    pad = int(18 * S)
+
+    for stop, nights, why in rec["rows"]:
+        name_lines, name_fnt, name_lh = fit(d, stop, theme.SERIF, 19, 14, namew, int(0.09 * H))
+        why_h = _text_h(d, why, wf, whyw, 1.32)
+        row_h = max(why_h, name_lh * len(name_lines)) + 2 * pad
+        _rule(d, x, y, W - 2 * MARGIN, theme.rgb(theme.LINE), thick=max(1, int(1 * S)))
+        ry = y + pad
+        draw_lines(d, name_lines, name_fnt, x, ry, theme.rgb(theme.INK), name_lh)
+        label = f"{nights} NIGHT" + ("S" if nights != 1 else "")
+        draw_tracked(d, label, gf, x + namew + int(0.015 * W), ry + int(4 * S), theme.rgb(theme.GOLD), int(1.5 * S))
+        _wrap_block(d, why, wf, whyx, ry, whyw, theme.rgb(theme.INK_SOFT), spacing=1.32)
+        y += row_h
+    _rule(d, x, y, W - 2 * MARGIN, theme.rgb(theme.LINE), thick=max(1, int(1 * S)))
+    return img
+
+
+def layout_days(rec):
+    """Header + stacked day-by-day entries (reuses the _labeled block helper)."""
+    img = Image.new("RGB", (W, H), theme.rgb(theme.PAPER_3))
+    d = ImageDraw.Draw(img)
+    x = MARGIN
+    y = int(0.09 * H)
+    ef = font(theme.SANS_SEMIBOLD, 12)
+    draw_tracked(d, rec["eyebrow"].upper(), ef, x, y, theme.rgb(theme.GOLD), int(3 * S))
+    y += _measure(d, "AG", ef)[1] + int(14 * S)
+    hl, hf, hlh = fit(d, rec["title"], theme.SERIF, 38, 26, int(W * 0.7), int(H * 0.14))
+    y = draw_lines(d, hl, hf, x, y, theme.rgb(theme.INK), hlh)
+    y += int(10 * S)
+    _rule(d, x, y, int(0.05 * W), theme.rgb(theme.GOLD))
+    y += int(26 * S)
+    maxw = W - 2 * MARGIN
+    for label, body in rec["days"]:
+        y = _labeled(d, x, y, maxw, label, body)
+    return img
+
+
 def layout_cta(rec):
     """Split: brand-blue panel with the call to action + full-bleed photo right."""
     img = Image.new("RGB", (W, H), theme.rgb(theme.BRAND_2))
@@ -476,6 +540,8 @@ LAYOUTS = {
     "grid": layout_grid,
     "cta": layout_cta,
     "quote": layout_quote,
+    "table": layout_table,
+    "days": layout_days,
 }
 
 

@@ -59,19 +59,51 @@ Outputs to `dist/<slug>/`:
 ## Itinerary format (`itineraries/*.json`)
 
 ```json
-{ "title": "...", "client": "...", "dates": "...", "nights": 14,
+{ "title": "...", "client": "...", "dates": "...",
   "prepared_by": "Exploreain", "cover_key": "kochi",
-  "destinations": ["KOCHI", "MUNNAR", ...] }
+  "destinations": ["KOCHI", "MUNNAR", ...],
+  "plan_content": "kerala-signature-classic" }
 ```
 `destinations` is an ordered list of UPPERCASE catalogue names; validated against
-`catalogue.json` (run `parse.py` first if it's missing). `nights` (optional) adds
-a tile to the dashboard slide.
+`catalogue.json` (run `parse.py` first if it's missing).
 
-Every deck opens with a **cover** then a **"by the numbers" dashboard** — real,
-itinerary-specific figures (destinations, curated experiences, districts,
-attractions, nights) as stat tiles (`compute_stats` in `slideplan.py`; district
-map there too). Every slide carries a company **footer** and a faint logo
-**watermark** (`add_branding` in `deck_layouts.py`).
+`plan_content` is optional and points at a `build/plan_content/<name>.json`
+sidecar (see below) — when present, a route/day-by-day/named-stays sequence is
+inserted right after the region cards. Every slide carries a company **footer**
+and a faint logo **watermark** (`add_branding` in `deck_layouts.py`).
+
+## Tailored-plan content (`plan_content`)
+
+For Kerala, `planning/kerala/README.md` + `planning/kerala/NN-*.md` hold five
+concierge-grade day-by-day models (route rationale, day-by-day, named stays).
+Those are prose, written for a human reader — not slide-fit copy. A
+`build/plan_content/<slug>.json` sidecar is the compressed, structured bridge
+between a model and the renderer:
+
+```json
+{
+  "route": [{"stop": "Kochi", "nights": 2, "why": "one-line reason, ~90-110 chars"}],
+  "days": [{"day": 1, "label": "Arrive Kochi", "body": "1-2 sentences, ~140-260 chars"}],
+  "stays": [{"stop": "Kochi", "name": "Brunton Boatyard (CGH Earth)", "why": "one line"}]
+}
+```
+Committed to git (not gitignored), mirroring `copy_cache.json`. `day` may be a
+range string (e.g. `"3–7"`) for a merged multi-day block — `slideplan._day_bound`
+handles that when chunking day slides (3 days per slide by default).
+
+This is authored by the **`deck-content`** agent
+(`.claude/agents/deck-content.md`), not a build-time API script — there's no
+`ANTHROPIC_API_KEY` in this environment, and a Claude Code subagent can read
+and reason over the prose models directly. Give it a free-text requirement
+("8-night Kerala honeymoon") or a specific model path; it picks/compresses the
+content, writes the sidecar + itinerary JSON, and runs the build. Five
+examples already exist — `build/plan_content/kerala-*.json` paired with
+`itineraries/kerala-*.json` — copy the shape from those rather than starting
+from scratch.
+
+Rendered by two dedicated layouts in `deck_layouts.py`: `table` (route/nights)
+and `days` (day-by-day, auto-chunked); named stays reuse the existing `grid`
+layout as-is.
 
 ## Modules
 
@@ -79,8 +111,8 @@ map there too). Every slide carries a company **footer** and a faint logo
 |-------------------|------|
 | `theme.py`        | Blue palette + Windows font paths (mirrored from `template.html`) |
 | `imagemap.py`     | Shared `SPEC` / `DEST_IMG` / `EXP_IMG` (also used by `images.py`) |
-| `itinerary.py`    | Load + validate an itinerary against `catalogue.json` |
-| `slideplan.py`    | Itinerary → ordered slide records (cover, overview, features, closing) |
+| `itinerary.py`    | Load + validate an itinerary against `catalogue.json`; attaches `plan_content` |
+| `slideplan.py`    | Itinerary → ordered slide records (cover, overview, region cards, tailored-plan route/days/stays, closing) |
 | `deck_copy.py`    | AI headline+caption per destination + committed cache + fallback |
 | `deck_layouts.py` | The single Pillow layout engine (all geometry/color/type lives here) |
 | `deck_render.py`  | Slide plan → PDF + image-PPTX + editable-PPTX |

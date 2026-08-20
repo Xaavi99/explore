@@ -1,0 +1,29 @@
+{
+  "route": [
+    {"stop": "Kochi", "nights": 2, "why": "Easy arrival, a kid-paced heritage walk plus a half-day at Cherai Beach as a gentler second day."},
+    {"stop": "Munnar", "nights": 2, "why": "Interactive stops — Tea Museum, Mattupetty boating — alongside the scenery; more to do, not just see."},
+    {"stop": "Thekkady", "nights": 2, "why": "The wildlife anchor of this trip: a boat safari and an ethically vetted elephant interaction, unrushed."},
+    {"stop": "Kumarakom", "nights": 1, "why": "A backwater day cruise, not an overnight — easier with young children, same highlight."},
+    {"stop": "Marari Beach", "nights": 2, "why": "Calm, shallow water by Kerala coastal standards, plus the trip's unstructured day."}
+  ],
+  "days": [
+    {"day": 1, "label": "Arrive Kochi", "body": "Transfer, rest. No activity."},
+    {"day": 2, "label": "Fort Kochi, kid-paced", "body": "A shorter heritage walk — fishing nets, Mattancherry Palace — with breaks built in, plus a backwater village canoe ride that plays more than it tours."},
+    {"day": 3, "label": "Cherai Beach, then Munnar", "body": "A calm morning at shallow, quiet Cherai before a ~4-hour drive up, kept to a half-day so the climb still starts by early afternoon."},
+    {"day": 4, "label": "Munnar", "body": "The Tea Museum's working demonstrations in the morning, Mattupetty Dam's pedal- and speedboats in the afternoon, plus a gentle estate walk."},
+    {"day": 5, "label": "Drive to Thekkady", "body": "A ~3.5–4 hour drive."},
+    {"day": 6, "label": "Periyar boat safari", "body": "A morning boat safari — no walking required, good odds for all ages — then an ethically vetted elephant feeding and bathing session, no riding."},
+    {"day": 7, "label": "Thekkady, second day", "body": "A short, flat spice-plantation walk ending in a tasting, then an evening Kalaripayattu demonstration that reliably lands with kids and teens."},
+    {"day": 8, "label": "Kumarakom day cruise", "body": "Arrive by lunch; an afternoon backwater day cruise plus a coir-workshop village walk, hands-on and short."},
+    {"day": 9, "label": "Drive to Marari Beach", "body": "The shortest transfer in the trip, about an hour to 90 minutes. Rest of the day free."},
+    {"day": 10, "label": "Marari, unstructured", "body": "Beach and village cycling — nothing booked."},
+    {"day": 11, "label": "Depart Kochi", "body": "About 1.5–2 hours from Marari."}
+  ],
+  "stays": [
+    {"stop": "Kochi", "name": "Taj Malabar (or similar)", "why": "A larger-format property with family rooms and a pool — more practical than a small boutique stay."},
+    {"stop": "Munnar", "name": "CGH Earth or comparable estate", "why": "Family-configured cottages — interconnecting or two-bedroom units."},
+    {"stop": "Thekkady", "name": "Spice Village (CGH Earth)", "why": "A cottage layout that suits families, a short walk from the elephant-interaction centre."},
+    {"stop": "Kumarakom", "name": "Coconut Lagoon (CGH Earth) or Kumarakom Lake Resort", "why": "A lakeside resort with a pool and family rooms, well used given the day-cruise structure."},
+    {"stop": "Marari Beach", "name": "Marari Beach Resort (CGH Earth)", "why": "Cottage-style, safe swimming by Kerala coastal standards, with bicycles for the village."}
+  ]
+}

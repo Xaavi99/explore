@@ -7,7 +7,8 @@ Itinerary format (itineraries/*.json):
       "dates": "Nov 2026 · 12 nights",
       "prepared_by": "Exploreain",
       "cover_key": "kochi",            # optional image key for the cover
-      "destinations": ["KOCHI", "MUNNAR", ...]   # ordered UPPERCASE names
+      "destinations": ["KOCHI", "MUNNAR", ...],  # ordered UPPERCASE names
+      "plan_content": "kerala-signature-classic"  # optional, see build/plan_content/
     }
 """
 import os, json, difflib
@@ -37,6 +38,13 @@ def load_itinerary(path):
         it = json.load(f)
     if not it.get("destinations"):
         raise ValueError(f"{path}: itinerary has no 'destinations'")
+    pc_name = it.get("plan_content")
+    if pc_name:
+        pc_path = os.path.join(ROOT, "build", "plan_content", f"{pc_name}.json")
+        if not os.path.exists(pc_path):
+            raise ValueError(f"{path}: plan_content '{pc_name}' not found at {pc_path}")
+        with open(pc_path, encoding="utf-8") as f:
+            it["plan_content_data"] = json.load(f)
     return it
 
 
