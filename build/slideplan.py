@@ -110,6 +110,55 @@ def _stays_slide(pc):
     }
 
 
+def _journey_cover_slide(itinerary, pc, stops):
+    cover_path = imagemap.slide_path(itinerary["cover_key"]) if itinerary.get("cover_key") else None
+    if not cover_path:
+        cover_path = next((s["slide_path"] for s in stops if s["slide_path"]), None)
+    return {
+        "layout": "journey_cover",
+        "kicker": (itinerary.get("prepared_by") or C.COMPANY) + " · South India",
+        "title": itinerary.get("title", "South India Tour"),
+        "subtitle": itinerary.get("subtitle") or itinerary.get("dates", ""),
+        "hero": cover_path,
+    }
+
+
+def _journey_day_slides(pc):
+    """One slide per calendar day (unlike the classic `days` layout, no
+    chunking — the road/car motif needs one day per slide to read as
+    progress). Requires each `days[]` entry to carry the journey fields
+    (hero_key, current_index, highlights, activities, ...) — see
+    build/plan_content/kerala-signature-classic.json for the reference shape."""
+    route_stops = [r["stop"] for r in pc["route"]]
+    day_total = len(pc["days"])
+    slides = []
+    for d in pc["days"]:
+        slides.append({
+            "layout": "journey_day",
+            "day_of": d["day"], "day_total": day_total,
+            "current_index": d.get("current_index", 0),
+            "title": d["label"], "subtitle": d.get("body", ""),
+            "hero": imagemap.slide_path(d["hero_key"]) if d.get("hero_key") else None,
+            "support": imagemap.slide_path(d["support_key"]) if d.get("support_key") else None,
+            "highlights": d.get("highlights", []),
+            "activities": d.get("activities", {}),
+            "drive_time": d.get("drive_time"), "next_stop": d.get("next_stop"),
+            "stay_tier": d.get("stay_tier"), "route": route_stops,
+        })
+    return slides
+
+
+def _journey_closing_slide(itinerary, pc):
+    route_stops = [r["stop"] for r in pc["route"]]
+    total_nights = sum(r["nights"] for r in pc["route"])
+    return {
+        "layout": "journey_closing",
+        "title": itinerary.get("title", "South India Tour"),
+        "route": route_stops,
+        "stats": [(str(len(pc["days"])), "Days"), (str(len(route_stops)), "Stops"), (str(total_nights), "Nights")],
+    }
+
+
 def _cover_slide(itinerary, stops):
     cover_path = imagemap.slide_path(itinerary["cover_key"]) if itinerary.get("cover_key") else None
     if not cover_path:
@@ -124,20 +173,35 @@ def _cover_slide(itinerary, stops):
     }
 
 
-def build_slide_plan(itinerary, stops, internal=False):
+def build_slide_plan(itinerary, stops, internal=False, theme="classic"):
     """itinerary dict + resolved stops -> [slide record].
 
     A tailored-plan itinerary (one with a `plan_content` sidecar) gets a lean,
-    plan-specific deck: cover, an overall stops summary (route/nights), then
-    day-by-day — none of the general brand/marketing slides. `internal=True`
-    additionally includes the named-stays slide (specific hotel/property
-    names) for internal planning use; the client-facing deck (the default)
-    never includes it — property partners are confidential.
+    plan-specific deck instead of the general brand deck. Two shapes:
 
-    An itinerary with no `plan_content` gets the general company-overview
-    brand deck (unchanged from before tailored plans existed)."""
+    - `theme="classic"` (default): cover, an overall stops summary
+      (route/nights), then day-by-day, in the blue company-overview palette.
+      `internal=True` additionally includes the named-stays slide (specific
+      hotel/property names) for internal planning use; the client-facing
+      deck (the default) never includes it — property partners are
+      confidential.
+    - `theme="journey"`: the dark cinematic-journey deck — cover, one slide
+      per calendar day (road/car progress motif), closing. Requires the
+      `days[]` entries to carry the journey fields (hero_key, current_index,
+      highlights, activities, ...); see build/plan_content/
+      kerala-signature-classic.json. No named-stays layout exists for this
+      theme yet, so `internal` has no effect here.
+
+    An itinerary with no `plan_content` always gets the general
+    company-overview brand deck (unchanged from before tailored plans
+    existed) — `theme` only applies to plan_content decks."""
     pc = itinerary.get("plan_content_data")
     if pc:
+        if theme == "journey":
+            slides = [_journey_cover_slide(itinerary, pc, stops)]
+            slides += _journey_day_slides(pc)
+            slides.append(_journey_closing_slide(itinerary, pc))
+            return slides
         slides = [_cover_slide(itinerary, stops), _route_slide(pc)]
         slides += _day_slides(pc)
         if internal:

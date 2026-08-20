@@ -36,16 +36,23 @@ def main(argv):
     if warnings:
         print("WARN: no photo for", ", ".join(warnings), "(region placeholder used)")
 
-    plan = slideplan.build_slide_plan(itinerary, stops)
-    out = deck_render.generate(plan, slug, itinerary.get("title", slug), DIST)
-    print(f"\n{len(plan)} slides -> {os.path.join('dist', slug)}")
+    theme_name = itinerary.get("theme", "classic")
+    plan = slideplan.build_slide_plan(itinerary, stops, theme=theme_name)
+    out = deck_render.generate(plan, slug, itinerary.get("title", slug), DIST, theme_name=theme_name)
+    print(f"\n{len(plan)} slides ({theme_name} theme) -> {os.path.join('dist', slug)}")
     for k in ("pdf", "pptx", "pptx_editable"):
-        print(f"  {k:14s} {os.path.relpath(out[k], ROOT)}")
+        if out.get(k):
+            print(f"  {k:14s} {os.path.relpath(out[k], ROOT)}")
+        else:
+            print(f"  {k:14s} (not available for the {theme_name} theme)")
 
     if itinerary.get("plan_content_data"):
-        internal_plan = slideplan.build_slide_plan(itinerary, stops, internal=True)
-        internal_pdf = deck_render.generate_internal_pdf(internal_plan, slug, DIST)
-        print(f"  {'internal_pdf':14s} {os.path.relpath(internal_pdf, ROOT)}  (confidential — not for clients)")
+        if theme_name == "classic":
+            internal_plan = slideplan.build_slide_plan(itinerary, stops, internal=True, theme=theme_name)
+            internal_pdf = deck_render.generate_internal_pdf(internal_plan, slug, DIST, theme_name=theme_name)
+            print(f"  {'internal_pdf':14s} {os.path.relpath(internal_pdf, ROOT)}  (confidential — not for clients)")
+        else:
+            print(f"  {'internal_pdf':14s} (not available for the {theme_name} theme — no Named Stays layout yet)")
     return 0
 
 

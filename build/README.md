@@ -72,6 +72,22 @@ sidecar (see below) — when present, a route/day-by-day/named-stays sequence is
 inserted right after the region cards. Every slide carries a company **footer**
 and a faint logo **watermark** (`add_branding` in `deck_layouts.py`).
 
+### Theme (`theme`, optional)
+
+A `plan_content` itinerary defaults to the **classic** blue company-overview
+deck. Set `"theme": "journey"` (plus a `"subtitle"` string for the cover) to
+render the dark **cinematic-journey** deck instead — cover, one slide per
+calendar day with a road/car progress motif, closing — via
+`deck_layouts_journey.py`/`theme_journey.py` (kept fully separate from the
+blue `deck_layouts.py`/`theme.py`, which stay untouched). This needs the
+sidecar's `days[]` entries to carry extra fields (see the journey schema
+below); `itineraries/kerala-signature-classic.json` +
+`build/plan_content/kerala-signature-classic.json` is the reference pair.
+
+The journey theme has no native-editable PPTX and no Named Stays layout yet
+— `deck.py` prints `(not available for the journey theme)` for those two
+outputs, which is expected.
+
 ## Tailored-plan content (`plan_content`)
 
 For Kerala, `planning/kerala/README.md` + `planning/kerala/NN-*.md` hold five
@@ -104,6 +120,15 @@ from scratch.
 Rendered by two dedicated layouts in `deck_layouts.py`: `table` (route/nights)
 and `days` (day-by-day, auto-chunked); named stays reuse the existing `grid`
 layout as-is.
+
+For the `theme: "journey"` deck, each `days[]` entry additionally needs:
+`hero_key` (an `imagemap.SPEC` key), `current_index` (0-based index into
+`route[]` — which stop this day belongs to, for the road/car position),
+`highlights` (list of short strings), `activities` (dict, any of
+`morning`/`afternoon`/`evening`/`night`), `drive_time`, `next_stop`,
+`stay_tier` (leave any of the last three `null` when not applicable), and
+optionally `support_key` for a second photo. Unlike the classic `days`
+layout, journey renders one slide per calendar day — no chunking.
 
 ## Modules
 

@@ -1,6 +1,6 @@
 ---
 name: deck-qa-journey
-description: Use to review, QA, or polish the new dark "cinematic journey" theme's output (build/deck_layouts_journey.py, rendered via build/build_journey_sample.py -> dist/journey-sample-*/) for visual alignment, compactness, spacing, text overflow, and overall professionalism against the reference in design/theme.md, and to fix issues in the layout engine when asked to optimize. Separate from `deck-qa`, which stays scoped to the legacy blue company-overview deck and would apply the wrong guardrails here (it explicitly protects the blue palette). Trigger on requests like "check the journey deck", "does the new deck look professional", "optimize/align the journey slides", "run the optimising agent", "compare against the reference doc".
+description: Use to review, QA, or polish the dark "cinematic journey" theme's output (build/deck_layouts_journey.py, rendered via build/deck.py for any itinerary with `"theme": "journey"` -> dist/<slug>/) for visual alignment, compactness, spacing, text overflow, and overall professionalism against the reference in design/theme.md, and to fix issues in the layout engine when asked to optimize. Separate from `deck-qa`, which stays scoped to the legacy blue company-overview deck and would apply the wrong guardrails here (it explicitly protects the blue palette). Trigger on requests like "check the journey deck", "does the new deck look professional", "optimize/align the journey slides", "run the optimising agent", "compare against the reference doc".
 tools: Read, Bash, Edit, Glob, Grep
 model: inherit
 ---
@@ -28,10 +28,22 @@ tool.
   `layout_journey_closing`, dispatched via `LAYOUTS`/`render_slide()`), plus
   the road/pin/car geometry primitives (`road_column`, `draw_road`,
   `draw_map_pin`, `draw_car`, `_road_ribbon`, `_tangent_angle`). Palette in
-  `theme_journey.py`. Demo assembly script: `build/build_journey_sample.py`
-  (hardcodes one full sample — Kerala Signature Classic, 9 days — cover to
-  closing; NOT yet wired into `slideplan.py`/`deck.py`, so this is the only
-  way to render a full sample deck right now).
+  `theme_journey.py`.
+- **Wired into the real pipeline**: `slideplan.build_slide_plan(itinerary,
+  stops, theme="journey")` builds `journey_cover`/`journey_day`/
+  `journey_closing` records from an itinerary's `plan_content_data`
+  (`_journey_cover_slide`, `_journey_day_slides`, `_journey_closing_slide`),
+  and `deck_render.generate(..., theme_name="journey")` routes rendering
+  through `deck_layouts_journey` instead of the blue `deck_layouts`
+  (`LAYOUT_MODULES` in `deck_render.py`). An itinerary opts in with
+  `"theme": "journey"` (see `itineraries/kerala-signature-classic.json`, the
+  reference example) — its `plan_content` sidecar's `days[]` entries then need
+  the extra journey fields (`hero_key`, `current_index`, `highlights`,
+  `activities`, `drive_time`, `next_stop`, `stay_tier`, optional
+  `support_key`; see `build/plan_content/kerala-signature-classic.json`).
+  There's no native-editable PPTX or Named Stays slide for this theme yet —
+  `deck.py` prints "(not available for the journey theme)" for those, which
+  is expected, not a bug.
 - **No QA exists anywhere else for this theme** — you are the only check.
   Known risk spots, from this engine's actual build history (worth extra
   scrutiny every time):
@@ -58,16 +70,16 @@ tool.
 
 ## Procedure
 
-1. **Always rebuild before judging.** Run
-   `python build/build_journey_sample.py` from `build/` for the full
-   11-slide sample, and/or `python build/deck_layouts_journey.py` for the
-   isolated road-geometry + single-day sanity renders
-   (`dist/_road_check/`, `dist/_journey_check/`). Never trust stale `dist/`
-   output.
+1. **Always rebuild before judging.** From `build/`, run
+   `python deck.py ../itineraries/kerala-signature-classic.json --no-ai` for
+   the full 11-slide reference deck (cover + 9 days + closing), and/or
+   `python deck_layouts_journey.py` for the isolated road-geometry +
+   single-day sanity renders (`dist/_road_check/`, `dist/_journey_check/`).
+   Never trust stale `dist/` output.
 2. **Read every rendered slide** at
-   `dist/journey-sample-kerala-signature-classic/slides/slide_NN.jpg`.
-   Compare side-by-side against the matching `design/theme-day*.jpg`
-   mockup and, for motion/transition intent, the `theme-video-frames/`.
+   `dist/kerala-signature-classic/slides/slide_NN.jpg`. Compare side-by-side
+   against the matching `design/theme-day*.jpg` mockup and, for
+   motion/transition intent, the `theme-video-frames/`.
 3. **Check for**, in rough priority order:
    - **Compactness/alignment** (the current explicit ask): does content sit
      with unnecessary dead space, or crowd/overflow its box? Are left
@@ -95,20 +107,22 @@ tool.
      client-facing output (only non-identifying "stay tier" descriptions).
 4. **If asked to fix**: edit `build/deck_layouts_journey.py` for geometry
    issues (the large majority belong here). Only touch `theme_journey.py`
-   for palette/type-scale changes. Then rebuild
-   (`build_journey_sample.py` and/or the module's own `__main__`) and
-   re-read the same slide(s) to confirm the fix actually resolved it before
-   reporting done — iterate rather than guessing once.
+   for palette/type-scale changes. Then rebuild (`deck.py
+   ../itineraries/kerala-signature-classic.json` and/or the module's own
+   `__main__`) and re-read the same slide(s) to confirm the fix actually
+   resolved it before reporting done — iterate rather than guessing once.
 5. **Guardrails**:
    - Keep the dark palette + single teal glow accent — do not introduce
      per-destination rainbow colours or move toward the legacy blue theme.
    - Do not attempt to add real cross-fade/slide-transition animation —
      out of scope for a static PDF/PPTX export; flag as a future
      video-export idea instead if it seems worth mentioning.
-   - This engine is NOT yet wired into `slideplan.py`/`deck.py` — don't
-     wire it in as a side effect of a polish pass unless explicitly asked;
-     that's separate, larger work (schema extension + `deck-content` agent
-     update, per the build plan).
+   - This is the only itinerary using `"theme": "journey"` so far — if a fix
+     changes how a `plan_content` field is read (e.g. `hero_key`,
+     `current_index`), re-check `build/plan_content/kerala-signature-classic.json`
+     still matches, and flag to the user if other models should be migrated
+     to this theme rather than doing that authoring yourself (that's
+     `deck-content`'s job).
 
 ## Reporting
 

@@ -36,6 +36,21 @@ a pair — `deck-qa` is the other half, reviewing what you produce.
   writing a new one: `build/plan_content/kerala-signature-classic.json` +
   `itineraries/kerala-signature-classic.json` is the simplest pair to copy
   the shape from.
+- **Theme choice**: an itinerary defaults to the blue company-overview deck.
+  Adding `"theme": "journey"` to the itinerary JSON (plus a `"subtitle"` for
+  the cover) switches it to the dark cinematic-journey deck instead — one
+  slide per calendar day with a road/car progress motif — which requires
+  each `days[]` entry in the sidecar to carry extra fields beyond the classic
+  ones: `hero_key` (an `imagemap.SPEC` key), `current_index` (0-based index
+  into `route[]` — which stop this day belongs to), `highlights` (list of
+  short strings), `activities` (dict, any of `morning`/`afternoon`/`evening`/
+  `night`), `drive_time`, `next_stop`, `stay_tier` (all three optional,
+  `null` when not applicable), and optional `support_key` for a second photo.
+  `kerala-signature-classic` is the reference example for this shape — only
+  add these fields (and don't chunk `days[]` — journey is one slide per
+  calendar day) when the user explicitly asks for the journey theme; default
+  to classic otherwise. No Named Stays slide exists for this theme yet, so
+  don't rely on `internal=True` doing anything there.
 
 ## Procedure
 

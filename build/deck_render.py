@@ -15,6 +15,12 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
 import theme
 import deck_layouts as L
+import deck_layouts_journey as JL
+
+# Layout engine per deck theme — see slideplan.build_slide_plan's `theme` arg.
+# Only "classic" has a native-editable (real text/shapes) renderer; "journey"
+# is pixel-slides only (PDF + image-PPTX) until that's built.
+LAYOUT_MODULES = {"classic": L, "journey": JL}
 
 LW, LH = 1280, 720
 SLIDE_IN_W, SLIDE_IN_H = 13.333, 7.5
@@ -37,7 +43,7 @@ def C(hex_str):
 
 
 # ---------- pixel-perfect PNG rendering ----------
-def render_pngs(plan, outdir, quality=88):
+def render_pngs(plan, outdir, quality=88, layouts=L):
     """Render each slide to a JPEG (small, email-friendly; text stays crisp at 2x).
     Clears any stale slide_NN.jpg first — otherwise a leftover image from a
     longer previous plan (e.g. a confidential slide dropped from the client
@@ -48,7 +54,7 @@ def render_pngs(plan, outdir, quality=88):
         os.remove(stale)
     paths = []
     for i, rec in enumerate(plan):
-        img = L.render_slide(rec)
+        img = layouts.render_slide(rec)
         p = os.path.join(outdir, f"slide_{i + 1:02d}.jpg")
         img.save(p, format="JPEG", quality=quality, optimize=True, progressive=True)
         paths.append(p)
@@ -233,31 +239,39 @@ def build_editable_pptx(plan, out_path, tmpdir):
     prs.save(out_path)
 
 
-def generate_internal_pdf(plan, slug, distroot):
+def generate_internal_pdf(plan, slug, distroot, theme_name="classic"):
     """A PDF-only render for internal use (e.g. a plan with the named-stays
     slide included) — rendered to a throwaway temp dir so the confidential
     slide's PNG never lands in the client-facing dist/<slug>/slides/ folder."""
+    layouts = LAYOUT_MODULES.get(theme_name, L)
     outdir = os.path.join(distroot, slug)
     os.makedirs(outdir, exist_ok=True)
     pdf = os.path.join(outdir, f"{slug}-internal.pdf")
     with tempfile.TemporaryDirectory() as td:
-        pngs = render_pngs(plan, td)
+        pngs = render_pngs(plan, td, layouts=layouts)
         build_pdf(pngs, pdf)
     return pdf
 
 
 # ---------- orchestration ----------
-def generate(plan, slug, title, distroot):
+def generate(plan, slug, title, distroot, theme_name="classic"):
+    layouts = LAYOUT_MODULES.get(theme_name, L)
     outdir = os.path.join(distroot, slug)
     png_dir = os.path.join(outdir, "slides")
     os.makedirs(png_dir, exist_ok=True)
-    pngs = render_pngs(plan, png_dir)
+    pngs = render_pngs(plan, png_dir, layouts=layouts)
 
     pdf = os.path.join(outdir, f"{slug}.pdf")
     pptx_img = os.path.join(outdir, f"{slug}.pptx")
-    pptx_edit = os.path.join(outdir, f"{slug}-editable.pptx")
     build_pdf(pngs, pdf)
     build_image_pptx(pngs, pptx_img)
-    with tempfile.TemporaryDirectory() as td:
-        build_editable_pptx(plan, pptx_edit, td)
-    return {"pdf": pdf, "pptx": pptx_img, "pptx_editable": pptx_edit, "slides": pngs}
+
+    result = {"pdf": pdf, "pptx": pptx_img, "pptx_editable": None, "slides": pngs}
+    if theme_name == "classic":
+        # No native-editable renderer for other themes yet (_slide_native
+        # only understands the blue layout records) — pixel PDF/PPTX only.
+        pptx_edit = os.path.join(outdir, f"{slug}-editable.pptx")
+        with tempfile.TemporaryDirectory() as td:
+            build_editable_pptx(plan, pptx_edit, td)
+        result["pptx_editable"] = pptx_edit
+    return result
